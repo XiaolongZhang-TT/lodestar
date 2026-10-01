@@ -1,0 +1,14 @@
+# 本地数据与密钥绝不打进镜像（挂载卷提供）
+data/
+
+# 版本库与编辑器配置
+.git
+.gitignore
+.idea
+.vscode
+
+# 其他
+__pycache__
+.DS_Store
+Dockerfile
+docker-compose.yml

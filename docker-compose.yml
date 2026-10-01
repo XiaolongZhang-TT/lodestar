@@ -1,0 +1,17 @@
+# 用法：把整个项目目录拷到服务器后执行
+#   docker compose up -d --build
+# 数据持久化在 ./data 目录（书签 + 会话密钥），备份这个目录即可
+services:
+  nav:
+    build: .
+    image: nav-me:latest
+    container_name: nav
+    restart: unless-stopped
+    ports:
+      - "8091:8091"
+    environment:
+      # ⚠️ 部署前务必改成自己的账号密码
+      NAV_USER: admin
+      NAV_PASS: nav-admin
+    volumes:
+      - ./data:/app/data
