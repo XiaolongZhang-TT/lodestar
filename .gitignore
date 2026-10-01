@@ -11,3 +11,4 @@ __pycache__/
 # 编辑器本地配置
 .idea/
 .vscode/
+data/icons/

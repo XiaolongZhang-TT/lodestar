@@ -64,6 +64,11 @@ function hostOf(url) {
   try { return new URL(url).hostname; } catch { return ""; }
 }
 
+/* 带端口的 host（如 www.example.com:10001），图标解析需要它区分同一域名的不同服务 */
+function netlocOf(url) {
+  try { return new URL(url).host; } catch { return ""; }
+}
+
 /* 首字母占位块的配色：根据名字取模挑一个，保证同名恒定同色 */
 const LETTER_COLORS = [
   ["#6366f1", "#8b5cf6"], ["#ec4899", "#f43f5e"], ["#14b8a6", "#0ea5e9"],
@@ -77,9 +82,9 @@ function cardHTML(link, index) {
   let icon;
   if (link.icon) {
     icon = `<span class="emoji">${esc(link.icon)}</span>`;
-  } else if (host) {
-    // 优先用网站自带的 favicon，加载失败再退回首字母
-    icon = `<img class="favicon" src="https://${esc(host)}/favicon.ico" alt="" loading="lazy">`;
+  } else if (netlocOf(link.url)) {
+    // 由后端解析网站图标（favicon.ico / 页面声明的图标），失败再退回首字母
+    icon = `<img class="favicon" src="/api/icon?host=${encodeURIComponent(netlocOf(link.url))}" alt="" loading="lazy">`;
   } else {
     icon = letterHTML(link.name);
   }

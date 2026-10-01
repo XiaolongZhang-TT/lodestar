@@ -18,7 +18,11 @@ import os
 import re
 import secrets
 import shutil
+import ssl
+import threading
 import time
+import urllib.parse
+import urllib.request
 from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -126,21 +130,109 @@ def sanitize(data):
     }
 
 
+# ---------- 图标解析：/favicon.ico → 首页 HTML 里的 <link rel=icon>，结果缓存 ----------
+ICON_DIR = os.path.join(DATA_DIR, "icons")
+ICON_LOCK = threading.Lock()   # 串行解析，避免并发冲击同一域名导致握手超时
+SSL_CTX = ssl.create_default_context()
+SSL_CTX.check_hostname = False  # 内网/自签证书的服务也要能取图标
+SSL_CTX.verify_mode = ssl.CERT_NONE
+
+
+def known_hosts():
+    """当前书签里出现过的 host:port 集合，图标代理只服务这些（防滥用）"""
+    hosts = set()
+    for cat in load_data().get("categories", []):
+        for link in cat.get("links", []):
+            try:
+                hosts.add(urllib.parse.urlsplit(link["url"]).netloc)
+            except Exception:
+                pass
+    return hosts
+
+
+def fetch_url(url, timeout=5, max_bytes=512 * 1024):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 nav-icon-fetcher"})
+    for attempt in (1, 2):  # 失败立即重试一次，消除瞬时网络抖动
+        try:
+            with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
+                return r.read(max_bytes)
+        except Exception:
+            if attempt == 2:
+                raise
+            time.sleep(1)
+
+
+def looks_like_image(data):
+    """很多 SPA 服务对任意路径都返回 200 + HTML，必须校验内容真的是图片"""
+    if not data:
+        return False
+    if data[:4] == b"\x89PNG":                    return True
+    if data[:3] == b"GIF8":                       return True
+    if data[:3] == b"\xff\xd8\xff":               return True  # JPEG
+    if data[:4] in (b"\x00\x00\x01\x00",          # ICO
+                    b"\x00\x00\x02\x00"):         return True  # CUR
+    if data[:2] == b"BM":                         return True  # BMP
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP": return True
+    if b"<svg" in data[:1024].lower():            return True  # SVG
+    return False
+
+
+def resolve_icon(host):
+    with ICON_LOCK:  # 串行解析 + 双重检查缓存，同一时刻只对外发一个请求
+        os.makedirs(ICON_DIR, exist_ok=True)
+        cache = os.path.join(ICON_DIR, host.replace(":", "_"))
+
+        if os.path.exists(cache):
+            age = time.time() - os.path.getmtime(cache)
+            with open(cache, "rb") as f:
+                data = f.read()
+            if data and age < 7 * 24 * 3600:   # 成功缓存 7 天
+                return data
+            if not data and age < 3600:        # 失败负缓存 1 小时后可重试
+                return data
+
+        data = b""
+        try:
+            got = fetch_url(f"https://{host}/favicon.ico")
+            if looks_like_image(got):
+                data = got
+        except Exception:
+            pass
+        if not data:
+            try:  # 抓首页，解析 <link rel="icon" href="..."> 再下载
+                html = fetch_url(f"https://{host}/").decode("utf-8", "ignore")
+                m = (re.search(r'<link[^>]+rel=["\'](?:shortcut )?icon["\'][^>]*href=["\']([^"\']+)["\']', html, re.I)
+                     or re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]*rel=["\'](?:shortcut )?icon["\']', html, re.I))
+                if m:
+                    got = fetch_url(urllib.parse.urljoin(f"https://{host}/", m.group(1)))
+                    if looks_like_image(got):
+                        data = got
+            except Exception:
+                pass
+
+        with open(cache, "wb") as f:   # 成功与失败都缓存
+            f.write(data)
+        return data
+
+
 # ---------- HTTP 处理 ----------
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=BASE_DIR, **kwargs)
 
     # ---- 小工具 ----
-    def reply_json(self, obj, status=200, cookie=None):
-        body = json.dumps(obj, ensure_ascii=False).encode()
+    def reply_bytes(self, body, ctype, status=200, cookie=None):
         self.send_response(status)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         if cookie:
             self.send_header("Set-Cookie", cookie)
         self.end_headers()
         self.wfile.write(body)
+
+    def reply_json(self, obj, status=200, cookie=None):
+        self.reply_bytes(json.dumps(obj, ensure_ascii=False).encode(),
+                         "application/json; charset=utf-8", status, cookie)
 
     def end_headers(self):
         # 所有响应都要求浏览器重验证后再用缓存，保证更新（代码/数据）立即生效
@@ -166,6 +258,15 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == "/api/auth":  # 后台页面据此决定显示登录框还是编辑器
             ok = self.logged_in()
             return self.reply_json({"ok": ok}, 200 if ok else 401)
+
+        if self.path.startswith("/api/icon"):  # 图标代理：只解析书签里的 host
+            host = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("host", [""])[0]
+            if not host or host not in known_hosts():
+                return self.send_error(403)
+            data = resolve_icon(host)
+            if not data:
+                return self.send_error(404)
+            return self.reply_bytes(data, "image/x-icon")
 
         if self.path == "/admin":
             self.path = "/admin.html"
