@@ -17,6 +17,9 @@ const store = {
   set: (k, v) => localStorage.setItem(k, v),
 };
 
+/* 全局状态：声明必须放在使用之前（tick/boot 都会读写） */
+let STATE = null;
+
 /* ---------- 1. 主题：跟随系统，可手动切换并记住 ---------- */
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -124,8 +127,6 @@ function renderCategories(cats) {
 }
 
 /* ---------- 4. 启动：拉取后端数据（失败自动重试，避免白屏） ---------- */
-let STATE = null;
-
 async function boot() {
   const ctrl = new AbortController();           // 手动超时：兼容所有浏览器
   const timer = setTimeout(() => ctrl.abort(), 5000);
