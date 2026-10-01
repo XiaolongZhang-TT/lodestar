@@ -123,21 +123,21 @@ function renderCategories(cats) {
   });
 }
 
-/* ---------- 4. 启动：拉取后端数据 ---------- */
+/* ---------- 4. 启动：拉取后端数据（失败自动重试，避免白屏） ---------- */
 let STATE = null;
 
 async function boot() {
   try {
-    const res = await fetch("/api/data");
+    const res = await fetch("/api/data", { signal: AbortSignal.timeout(5000) });
     if (!res.ok) throw new Error();
     STATE = await res.json();
+    document.title = STATE.title || "Nav";
+    renderCategories(STATE.categories);
   } catch {
     $("#categories").innerHTML =
       `<div class="empty">数据加载失败 —— 请用 <b>python3 server.py</b> 启动后再访问</div>`;
-    return;
+    setTimeout(boot, 3000); // 服务恢复后自动补上，无需手动刷新
   }
-  document.title = STATE.title || "Nav";
-  renderCategories(STATE.categories);
 }
 
 boot();

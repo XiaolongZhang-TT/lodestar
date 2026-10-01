@@ -17,6 +17,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import time
 from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -36,22 +37,25 @@ DEFAULT_DATA = {"title": "Nav · 我的导航", "name": "", "categories": []}
 
 # ---------- 数据读写 ----------
 def load_data():
-    try:
-        with open(DATA_FILE, encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        save_data(DEFAULT_DATA)  # 首次运行：落一份默认数据
-        return DEFAULT_DATA
+    # 主文件缺失或损坏时依次回退，避免读到半份数据
+    for path in (DATA_FILE, DATA_FILE + ".bak"):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            continue
+    save_data(DEFAULT_DATA)  # 首次运行：落一份默认数据
+    return DEFAULT_DATA
 
 
 def save_data(data):
     os.makedirs(DATA_DIR, exist_ok=True)
-    if os.path.exists(DATA_FILE):  # 旧数据滚动备份一份
-        os.replace(DATA_FILE, DATA_FILE + ".bak")
-    tmp = DATA_FILE + ".tmp"       # 先写临时文件再原子替换，防止写一半损坏
+    tmp = DATA_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, DATA_FILE)
+    if os.path.exists(DATA_FILE):
+        shutil.copyfile(DATA_FILE, DATA_FILE + ".bak")  # 备份旧数据（原文件保持完整）
+    os.replace(tmp, DATA_FILE)  # 原子替换，任意时刻读到的都是完整文件
 
 
 # ---------- 会话：HMAC 签名的过期时间戳即令牌 ----------
@@ -137,6 +141,11 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Set-Cookie", cookie)
         self.end_headers()
         self.wfile.write(body)
+
+    def end_headers(self):
+        # 所有响应都要求浏览器重验证后再用缓存，保证更新（代码/数据）立即生效
+        self.send_header("Cache-Control", "no-cache")
+        super().end_headers()
 
     def read_body(self):
         length = int(self.headers.get("Content-Length", 0))
