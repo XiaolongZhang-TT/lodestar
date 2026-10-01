@@ -127,16 +127,21 @@ function renderCategories(cats) {
 let STATE = null;
 
 async function boot() {
+  const ctrl = new AbortController();           // 手动超时：兼容所有浏览器
+  const timer = setTimeout(() => ctrl.abort(), 5000);
   try {
-    const res = await fetch("/api/data", { signal: AbortSignal.timeout(5000) });
+    const res = await fetch("/api/data", { signal: ctrl.signal });
     if (!res.ok) throw new Error();
     STATE = await res.json();
     document.title = STATE.title || "Nav";
     renderCategories(STATE.categories);
   } catch {
     $("#categories").innerHTML =
-      `<div class="empty">数据加载失败 —— 请用 <b>python3 server.py</b> 启动后再访问</div>`;
+      `<div class="empty">连不上后端服务，正在自动重试…<br>
+       <small>若一直失败，请确认服务已启动（python3 server.py 或 docker compose up -d）</small></div>`;
     setTimeout(boot, 3000); // 服务恢复后自动补上，无需手动刷新
+  } finally {
+    clearTimeout(timer);
   }
 }
 
