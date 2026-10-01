@@ -1,0 +1,13 @@
+# 运行时数据：会话密钥绝不能入库，书签备份文件也不需要
+data/secret.key
+data/*.bak
+data/*.tmp
+
+# 系统与缓存
+.DS_Store
+__pycache__/
+*.pyc
+
+# 编辑器本地配置
+.idea/
+.vscode/
