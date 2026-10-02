@@ -205,6 +205,18 @@ def looks_like_image(data):
     return False
 
 
+def sniff_mime(data):
+    """按内容返回正确的 MIME。SVG 必须是 image/svg+xml，浏览器才肯当图片渲染"""
+    if data[:4] == b"\x89PNG":                    return "image/png"
+    if data[:3] == b"\xff\xd8\xff":               return "image/jpeg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP": return "image/webp"
+    if data[:3] == b"GIF8":                       return "image/gif"
+    if data[:4] in (b"\x00\x00\x01\x00", b"\x00\x00\x02\x00"): return "image/x-icon"
+    if data[:2] == b"BM":                         return "image/bmp"
+    if b"<svg" in data[:1024].lower():            return "image/svg+xml"
+    return "application/octet-stream"
+
+
 def icon_cache(host):
     """只读缓存，不发网络请求。返回 b"" 表示负缓存有效（确定无图标），None 表示需要解析"""
     cache = os.path.join(ICON_DIR, host.replace(":", "_"))
@@ -397,7 +409,7 @@ def api_icon():
     if not data:
         return jsonify(ok=False, msg="未解析到图标"), 404
 
-    resp = send_file(io.BytesIO(data), mimetype="image/x-icon")
+    resp = send_file(io.BytesIO(data), mimetype=sniff_mime(data))
     resp.headers["Cache-Control"] = "public, max-age=3600"   # 图标按 host 稳定，1 小时免回源
     return resp
 

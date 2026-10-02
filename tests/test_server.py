@@ -83,3 +83,12 @@ def test_html_is_not_image():
     # SPA 对任意路径返回 200 + HTML，绝不能当图标
     assert not server.looks_like_image(b"<!DOCTYPE html><html><body>hi</body></html>")
     assert not server.looks_like_image(b"")
+
+
+# ---------- MIME 识别（SVG 必须返回 image/svg+xml 浏览器才渲染） ----------
+def test_sniff_mime():
+    assert server.sniff_mime(b"\x89PNG\r\n\x1a\n" + b"0" * 8) == "image/png"
+    assert server.sniff_mime(b"\xff\xd8\xff" + b"0" * 8) == "image/jpeg"
+    assert server.sniff_mime(b"RIFF\x00\x00\x00\x00WEBP") == "image/webp"
+    assert server.sniff_mime(b"\x00\x00\x01\x00" + b"0" * 8) == "image/x-icon"
+    assert server.sniff_mime(b'<svg xmlns="http://www.w3.org/2000/svg"></svg>') == "image/svg+xml"
