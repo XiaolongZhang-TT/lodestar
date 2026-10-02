@@ -1,0 +1,12 @@
+{
+  "name": "Nav · 我的导航",
+  "short_name": "Nav",
+  "description": "个人导航页",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0f17",
+  "theme_color": "#6366f1",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

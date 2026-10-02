@@ -18,6 +18,27 @@ document.documentElement.dataset.theme =
 /* 全部数据：{ title, name, categories: [{ name, icon, links: [...] }] } */
 let data = null;
 
+/* 未保存更改跟踪：按钮呼吸提示 + 离开页面拦截 */
+let dirty = false;
+
+function markDirty() {
+  if (dirty) return;
+  dirty = true;
+  $("#saveBtn")?.classList.add("dirty");
+}
+
+function clearDirty() {
+  dirty = false;
+  $("#saveBtn")?.classList.remove("dirty");
+}
+
+window.addEventListener("beforeunload", (e) => {
+  if (dirty) {   // 有未保存更改时，浏览器弹出离开确认
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
 /* ---------- 启动：已登录进编辑器，未登录进登录页 ---------- */
 async function boot() {
   let authed = false;
@@ -79,18 +100,22 @@ function renderEditor() {
 
   $("#metaTitle").value = data.title || "";
   $("#metaName").value = data.name || "";
-  $("#metaTitle").oninput = (e) => { data.title = e.target.value; };
-  $("#metaName").oninput = (e) => { data.name = e.target.value; };
+  $("#metaTitle").oninput = (e) => { data.title = e.target.value; markDirty(); };
+  $("#metaName").oninput = (e) => { data.name = e.target.value; markDirty(); };
   $("#saveBtn").onclick = save;
   $("#logoutBtn").onclick = async () => {
+    if (dirty && !confirm("有未保存的更改，确定退出？")) return;
     await fetch("/api/logout", { method: "POST" });
+    clearDirty();
     renderLogin();
   };
   $("#addCatBtn").onclick = () => {
     data.categories.push({ name: "新分类", icon: "📁", links: [] });
+    markDirty();
     renderCatList();
   };
 
+  clearDirty();
   renderCatList();
 }
 
@@ -113,23 +138,27 @@ function renderCatList() {
     const ci = +btn.dataset.delcat;
     if (confirm(`确定删除分类「${data.categories[ci].name}」及其全部链接？`)) {
       data.categories.splice(ci, 1);
+      markDirty();
       renderCatList();
     }
   });
   onAll("[data-addlink]", (btn) => btn.onclick = () => {
     data.categories[+btn.dataset.addlink].links
       .push({ name: "", url: "https://", desc: "", icon: "" });
+    markDirty();
     renderCatList();
   });
   onAll("[data-dellink]", (btn) => btn.onclick = () => {
     const { ci, li } = btn.dataset;
     data.categories[+ci].links.splice(+li, 1);
+    markDirty();
     renderCatList();
   });
   onAll("input[data-k]", (inp) => inp.oninput = (e) => {
     const { ci, li, k } = e.target.dataset;
     if (li === undefined) data.categories[+ci][k] = e.target.value;        // 分类字段
     else data.categories[+ci].links[+li][k] = e.target.value;              // 链接字段
+    markDirty();
   });
 }
 
@@ -153,11 +182,32 @@ function onAll(sel, bind) {
 }
 
 /* ---------- 保存 ---------- */
+
+/* 提交前整理：去掉首尾空白，网址缺协议时自动补 https:// */
+function normalizeData() {
+  data.title = (data.title || "").trim();
+  data.name = (data.name || "").trim();
+  data.categories.forEach((cat) => {
+    cat.name = (cat.name || "").trim();
+    cat.icon = (cat.icon || "").trim();
+    cat.links.forEach((l) => {
+      l.name = (l.name || "").trim();
+      l.desc = (l.desc || "").trim();
+      l.icon = (l.icon || "").trim();
+      l.url = (l.url || "").trim();
+      if (l.name && l.url && !/^https?:\/\//i.test(l.url)) {
+        l.url = "https://" + l.url;   // 内网地址习惯不带协议，自动补全
+      }
+    });
+  });
+}
+
 async function save() {
   const msg = $("#saveMsg");
   msg.className = "admin-msg";
   msg.textContent = "保存中…";
 
+  normalizeData();
   const res = await fetch("/api/data", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -168,6 +218,8 @@ async function save() {
   if (res.ok) {
     const t = new Date();
     msg.textContent = `已保存 ${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
+    clearDirty();
+    renderCatList();   // 回填自动补全后的网址
   } else {
     msg.className = "admin-msg err";
     msg.textContent = out.msg || "保存失败";

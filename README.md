@@ -7,9 +7,10 @@
 
 - 🕐 大时钟 + 按时段问候语
 - 🧩 卡片式书签，自动解析网站图标（favicon / 页面声明的图标），失败回退彩色首字母方块，也可用 emoji 覆盖
-- 🔐 **后台管理**（`/admin`）：登录后可增删改分类和链接、设置页面标题，保存即生效
+- 🔍 本地书签筛选（按 `/` 聚焦，即时过滤，不是搜索引擎）
+- 🔐 **后台管理**（`/admin`）：登录后可增删改分类和链接、设置页面标题，保存即生效；未保存有提醒，网址缺协议自动补全
 - 🌙 明 / 暗双主题：默认跟随系统，手动切换后会记住
-- 📱 响应式布局，手机可用
+- 📱 响应式布局 + PWA（手机可「添加到主屏幕」全屏使用）
 
 ## 快速开始（本机）
 
@@ -54,8 +55,9 @@ docker compose up -d --build
 
 | 文件 | 说明 |
 |---|---|
-| `data/bookmarks.json` | 全部书签数据，后台每次保存前自动滚动备份为 `.bak` |
-| `data/secret.key` | 登录会话的 HMAC 签名密钥，首次启动自动生成（框架只托管 static/，不会暴露它） |
+| `data/bookmarks.json` | 全部书签数据，保存时自动滚动备份 |
+| `data/backups/` | 历史备份（保留最近 10 份），误删可从这里找回 |
+| `data/secret.key` | 登录会话的 HMAC 签名密钥，首次启动自动生成（权限 600，框架不会把它当静态文件暴露） |
 | `data/icons/` | 网站图标缓存：成功 7 天、失败 1 小时后自动重试；删掉即可强制重取 |
 
 - 登录：`POST /api/login` 校验账号密码（常量时间比较 + 失败延迟 0.5s），
@@ -85,11 +87,13 @@ docker compose up -d --build
 ```
 nav_me/
 ├── server.py            # Flask 后端：路由按「方法 + 路径」逐个拆分
-├── requirements.txt     # Python 依赖（flask + waitress）
+├── requirements.txt     # Python 依赖（已锁版本）
+├── tests/               # 纯函数单元测试（pytest）
 ├── static/              # 前端（Flask 静态目录）
-│   ├── index.html + app.js    # 前台页面与逻辑
-│   ├── admin.html + admin.js  # 后台管理页面与逻辑
-│   └── style.css              # 前后台共用样式（含明暗主题变量）
+│   ├── index.html + app.js    # 前台：时钟 / 渲染 / 筛选 / 图标重试
+│   ├── admin.html + admin.js  # 后台：登录 / 增删改 / 未保存保护
+│   ├── style.css              # 前后台共用样式（含明暗主题变量）
+│   └── manifest.webmanifest + icon.svg   # PWA
 ├── Dockerfile / docker-compose.yml
-└── data/                # 运行时数据（书签 / 密钥 / 图标缓存）
+└── data/                # 运行时数据（书签 / 备份 / 密钥 / 图标缓存）
 ```

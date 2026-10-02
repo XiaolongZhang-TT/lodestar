@@ -122,16 +122,54 @@ function renderCategories(cats) {
       <div class="links">${cat.links.map(cardHTML).join("")}</div>
     </section>`).join("");
 
-  // favicon 加载失败 → 换成首字母方块
+  // 图标加载失败：先自动重试两次（后台可能正在解析），仍失败才用首字母方块
   root.querySelectorAll(".favicon").forEach((img) => {
     img.addEventListener("error", () => {
-      const tile = img.closest(".icon-tile");
-      tile.innerHTML = letterHTML(tile.dataset.name);
-    }, { once: true });
+      const tries = +(img.dataset.retry || 0);
+      if (tries < 2) {
+        img.dataset.retry = tries + 1;
+        setTimeout(() => {
+          img.src = img.src.replace(/&r=\d*/, "") + `&r=${tries + 1}`;
+        }, 3000);
+      } else {
+        const tile = img.closest(".icon-tile");
+        tile.innerHTML = letterHTML(tile.dataset.name);
+      }
+    });
   });
 }
 
-/* ---------- 4. 启动：拉取后端数据（失败自动重试，避免白屏） ---------- */
+/* ---------- 4. 本地书签筛选：输入即时过滤卡片（不是搜索引擎） ---------- */
+const filterInput = $("#filterInput");
+
+filterInput.addEventListener("input", () => {
+  const q = filterInput.value.trim().toLowerCase();
+  document.querySelectorAll(".category").forEach((sec) => {
+    let shown = 0;
+    sec.querySelectorAll(".card").forEach((card) => {
+      const hit = !q
+        || card.textContent.toLowerCase().includes(q)
+        || card.href.toLowerCase().includes(q);
+      card.classList.toggle("filtered-out", !hit);
+      if (hit) shown++;
+    });
+    sec.classList.toggle("filtered-out", shown === 0);
+  });
+});
+
+/* 快捷键：/ 聚焦筛选，Esc 清空并退出 */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "/" && document.activeElement !== filterInput) {
+    e.preventDefault();
+    filterInput.focus();
+  } else if (e.key === "Escape" && document.activeElement === filterInput) {
+    filterInput.value = "";
+    filterInput.dispatchEvent(new Event("input"));
+    filterInput.blur();
+  }
+});
+
+/* ---------- 5. 启动：拉取后端数据（失败自动重试，避免白屏） ---------- */
 async function boot() {
   const ctrl = new AbortController();           // 手动超时：兼容所有浏览器
   const timer = setTimeout(() => ctrl.abort(), 5000);
