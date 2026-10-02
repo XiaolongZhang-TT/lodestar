@@ -92,3 +92,16 @@ def test_sniff_mime():
     assert server.sniff_mime(b"RIFF\x00\x00\x00\x00WEBP") == "image/webp"
     assert server.sniff_mime(b"\x00\x00\x01\x00" + b"0" * 8) == "image/x-icon"
     assert server.sniff_mime(b'<svg xmlns="http://www.w3.org/2000/svg"></svg>') == "image/svg+xml"
+
+
+# ---------- SVG 补 viewBox（无坐标系的 SVG 缩放时会被裁剪） ----------
+def test_normalize_svg_adds_viewbox():
+    svg = b'<svg width="1252" height="1252" xmlns="http://www.w3.org/2000/svg"><path d="M0,0"/></svg>'
+    out = server.normalize_svg(svg).decode()
+    assert 'viewBox="0 0 1252 1252"' in out
+    assert out.count("<svg") == 1   # 原标签只改一次
+
+
+def test_normalize_svg_keeps_existing():
+    svg = b'<svg viewBox="0 0 10 10" width="10" height="10"></svg>'
+    assert server.normalize_svg(svg) == svg

@@ -217,6 +217,24 @@ def sniff_mime(data):
     return "application/octet-stream"
 
 
+def normalize_svg(data):
+    """给缺 viewBox 的 SVG 补上：否则缩放渲染时内容被裁剪而非缩放（如 AList 的图标）"""
+    try:
+        text = data.decode("utf-8", "ignore")
+        m = re.search(r"<svg\b[^>]*>", text)
+        if not m or "viewBox" in m.group(0):
+            return data
+        tag = m.group(0)
+        w = re.search(r'width="([\d.]+)"', tag)
+        h = re.search(r'height="([\d.]+)"', tag)
+        if not (w and h):
+            return data
+        patched = tag.replace("<svg", f'<svg viewBox="0 0 {w.group(1)} {h.group(1)}"', 1)
+        return text.replace(tag, patched, 1).encode()
+    except Exception:
+        return data
+
+
 def icon_cache(host):
     """只读缓存，不发网络请求。返回 b"" 表示负缓存有效（确定无图标），None 表示需要解析"""
     cache = os.path.join(ICON_DIR, host.replace(":", "_"))
@@ -409,7 +427,10 @@ def api_icon():
     if not data:
         return jsonify(ok=False, msg="未解析到图标"), 404
 
-    resp = send_file(io.BytesIO(data), mimetype=sniff_mime(data))
+    mime = sniff_mime(data)
+    if mime == "image/svg+xml":
+        data = normalize_svg(data)   # 补 viewBox，让无坐标系的 SVG 能正常缩放
+    resp = send_file(io.BytesIO(data), mimetype=mime)
     resp.headers["Cache-Control"] = "public, max-age=3600"   # 图标按 host 稳定，1 小时免回源
     return resp
 
