@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 # ==========================================================
-#  Nav · 个人导航页 —— 后端服务（仅 Python 标准库，零依赖）
+#  Nav · 个人导航页 —— 后端服务（Flask）
 #
-#  职责：托管静态页面 / 提供书签数据 API / 后台登录会话
-#
-#  启动:  python3 server.py
+#  启动:  pip install -r requirements.txt
+#         python3 server.py
 #  配置:  环境变量 NAV_USER / NAV_PASS  后台账号密码
 #                        NAV_PORT       监听端口（默认 8091）
 #  数据:  data/bookmarks.json  书签数据（后台保存后写回这里）
 #         data/secret.key      会话签名密钥（自动生成，勿外泄）
+#         data/icons/          网站图标缓存
 # ==========================================================
 
 import hashlib
 import hmac
+import io
 import json
 import os
 import re
@@ -23,8 +24,8 @@ import threading
 import time
 import urllib.parse
 import urllib.request
-from http.cookies import SimpleCookie
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+from flask import Flask, jsonify, request, send_file
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -35,11 +36,12 @@ PASS = os.environ.get("NAV_PASS", "nav-admin")
 PORT = int(os.environ.get("NAV_PORT", "8091"))
 
 SESSION_HOURS = 24 * 7      # 登录会话有效期：一周
-MAX_BODY = 1_000_000        # 请求体上限 1MB
 DEFAULT_DATA = {"title": "Nav · 我的导航", "name": "", "categories": []}
 
 
-# ---------- 数据读写 ----------
+# =========================================================
+#  数据读写
+# =========================================================
 def load_data():
     # 主文件缺失或损坏时依次回退，避免读到半份数据
     for path in (DATA_FILE, DATA_FILE + ".bak"):
@@ -62,7 +64,9 @@ def save_data(data):
     os.replace(tmp, DATA_FILE)  # 原子替换，任意时刻读到的都是完整文件
 
 
-# ---------- 会话：HMAC 签名的过期时间戳即令牌 ----------
+# =========================================================
+#  会话：HMAC 签名的过期时间戳即令牌
+# =========================================================
 def load_secret():
     path = os.path.join(DATA_DIR, "secret.key")
     try:
@@ -94,43 +98,13 @@ def check_token(token):
         return False
 
 
-# ---------- 提交数据校验：只保留认识的字段 ----------
-URL_RE = re.compile(r"^https?://\S+$")
+def logged_in():
+    return check_token(request.cookies.get("nav_token", ""))
 
 
-def sanitize(data):
-    if not isinstance(data, dict):
-        return None
-    categories = []
-    for cat in data.get("categories", []):
-        if not isinstance(cat, dict) or not str(cat.get("name", "")).strip():
-            return None
-        links = []
-        for link in cat.get("links", []):
-            if not isinstance(link, dict):
-                return None
-            url = str(link.get("url", "")).strip()
-            if not str(link.get("name", "")).strip() or not URL_RE.match(url):
-                return None
-            links.append({
-                "name": str(link["name"]).strip(),
-                "url": url,
-                "desc": str(link.get("desc", "")).strip(),
-                "icon": str(link.get("icon", "")).strip(),
-            })
-        categories.append({
-            "name": str(cat["name"]).strip(),
-            "icon": str(cat.get("icon", "")).strip(),
-            "links": links,
-        })
-    return {
-        "title": str(data.get("title", "")).strip() or "Nav · 我的导航",
-        "name": str(data.get("name", "")).strip(),
-        "categories": categories,
-    }
-
-
-# ---------- 图标解析：/favicon.ico → 首页 HTML 里的 <link rel=icon>，结果缓存 ----------
+# =========================================================
+#  图标解析：/favicon.ico → 首页 HTML 里的 <link rel=icon>，结果缓存
+# =========================================================
 ICON_DIR = os.path.join(DATA_DIR, "icons")
 ICON_LOCK = threading.Lock()   # 串行解析，避免并发冲击同一域名导致握手超时
 SSL_CTX = ssl.create_default_context()
@@ -215,114 +189,141 @@ def resolve_icon(host):
         return data
 
 
-# ---------- HTTP 处理 ----------
-class Handler(SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=BASE_DIR, **kwargs)
+# =========================================================
+#  提交数据校验：只保留认识的字段
+# =========================================================
+URL_RE = re.compile(r"^https?://\S+$")
 
-    # ---- 小工具 ----
-    def reply_bytes(self, body, ctype, status=200, cookie=None):
-        self.send_response(status)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(body)))
-        if cookie:
-            self.send_header("Set-Cookie", cookie)
-        self.end_headers()
-        self.wfile.write(body)
 
-    def reply_json(self, obj, status=200, cookie=None):
-        self.reply_bytes(json.dumps(obj, ensure_ascii=False).encode(),
-                         "application/json; charset=utf-8", status, cookie)
-
-    def end_headers(self):
-        # 所有响应都要求浏览器重验证后再用缓存，保证更新（代码/数据）立即生效
-        self.send_header("Cache-Control", "no-cache")
-        super().end_headers()
-
-    def read_body(self):
-        length = int(self.headers.get("Content-Length", 0))
-        if not 0 < length <= MAX_BODY:
+def sanitize(data):
+    if not isinstance(data, dict):
+        return None
+    categories = []
+    for cat in data.get("categories", []):
+        if not isinstance(cat, dict) or not str(cat.get("name", "")).strip():
             return None
-        return json.loads(self.rfile.read(length).decode())
+        links = []
+        for link in cat.get("links", []):
+            if not isinstance(link, dict):
+                return None
+            url = str(link.get("url", "")).strip()
+            if not str(link.get("name", "")).strip() or not URL_RE.match(url):
+                return None
+            links.append({
+                "name": str(link["name"]).strip(),
+                "url": url,
+                "desc": str(link.get("desc", "")).strip(),
+                "icon": str(link.get("icon", "")).strip(),
+            })
+        categories.append({
+            "name": str(cat["name"]).strip(),
+            "icon": str(cat.get("icon", "")).strip(),
+            "links": links,
+        })
+    return {
+        "title": str(data.get("title", "")).strip() or "Nav · 我的导航",
+        "name": str(data.get("name", "")).strip(),
+        "categories": categories,
+    }
 
-    def logged_in(self):
-        cookie = SimpleCookie(self.headers.get("Cookie", ""))
-        token = cookie.get("nav_token")
-        return bool(token and check_token(token.value))
 
-    # ---- GET：API + 静态页面 ----
-    def do_GET(self):
-        if self.path == "/api/data":
-            return self.reply_json(load_data())
+# =========================================================
+#  Web 应用
+# =========================================================
+app = Flask(__name__, static_folder="static", static_url_path="")
+app.config["MAX_CONTENT_LENGTH"] = 1_000_000   # 请求体上限 1MB
+app.json.ensure_ascii = False                  # JSON 中文原样输出
 
-        if self.path == "/api/auth":  # 后台页面据此决定显示登录框还是编辑器
-            ok = self.logged_in()
-            return self.reply_json({"ok": ok}, 200 if ok else 401)
 
-        if self.path.startswith("/api/icon"):  # 图标代理：只解析书签里的 host
-            host = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("host", [""])[0]
-            if not host or host not in known_hosts():
-                return self.send_error(403)
-            data = resolve_icon(host)
-            if not data:
-                return self.send_error(404)
-            return self.reply_bytes(data, "image/x-icon")
+# ---------- 页面 ----------
+@app.get("/")
+def page_index():
+    return app.send_static_file("index.html")
 
-        if self.path == "/admin":
-            self.path = "/admin.html"
 
-        # data/ 里的数据和密钥、后端源码不允许被当静态文件下载
-        if self.path.startswith("/data/") or self.path.startswith("/.") or self.path == "/server.py":
-            return self.send_error(403, "Forbidden")
+@app.get("/admin")
+def page_admin():
+    return app.send_static_file("admin.html")
 
-        return super().do_GET()
 
-    # ---- POST：登录 / 登出 / 保存数据 ----
-    def do_POST(self):
-        if self.path == "/api/login":
-            try:
-                body = self.read_body() or {}
-            except json.JSONDecodeError:
-                return self.reply_json({"ok": False, "msg": "请求格式错误"}, 400)
-            user_ok = hmac.compare_digest(str(body.get("user", "")), USER)
-            pass_ok = hmac.compare_digest(str(body.get("pass", "")), PASS)
-            if user_ok and pass_ok:
-                cookie = (f"nav_token={make_token()}; Path=/; HttpOnly; "
-                          f"SameSite=Lax; Max-Age={SESSION_HOURS * 3600}")
-                return self.reply_json({"ok": True}, cookie=cookie)
-            time.sleep(0.5)  # 拖慢暴力尝试
-            return self.reply_json({"ok": False, "msg": "用户名或密码错误"}, 401)
+# ---------- 会话 API ----------
+@app.post("/api/login")
+def api_login():
+    body = request.get_json(silent=True) or {}
+    user_ok = hmac.compare_digest(str(body.get("user", "")), USER)
+    pass_ok = hmac.compare_digest(str(body.get("pass", "")), PASS)
+    if not (user_ok and pass_ok):
+        time.sleep(0.5)  # 拖慢暴力尝试
+        return jsonify(ok=False, msg="用户名或密码错误"), 401
 
-        if self.path == "/api/logout":
-            return self.reply_json({"ok": True},
-                                   cookie="nav_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0")
+    resp = jsonify(ok=True)
+    resp.set_cookie("nav_token", make_token(), max_age=SESSION_HOURS * 3600,
+                    httponly=True, samesite="Lax", path="/")
+    return resp
 
-        if self.path == "/api/data":
-            if not self.logged_in():
-                return self.reply_json({"ok": False, "msg": "请先登录"}, 401)
-            try:
-                clean = sanitize(self.read_body())
-            except json.JSONDecodeError:
-                return self.reply_json({"ok": False, "msg": "请求格式错误"}, 400)
-            if clean is None:
-                return self.reply_json(
-                    {"ok": False, "msg": "书签数据不合法：每条链接都需要名称和 http(s) 网址"}, 400)
-            save_data(clean)
-            return self.reply_json({"ok": True})
 
-        return self.send_error(404)
+@app.post("/api/logout")
+def api_logout():
+    resp = jsonify(ok=True)
+    resp.set_cookie("nav_token", "", max_age=0, httponly=True, samesite="Lax", path="/")
+    return resp
+
+
+@app.get("/api/auth")
+def api_auth():
+    """后台页面据此决定显示登录框还是编辑器"""
+    if logged_in():
+        return jsonify(ok=True)
+    return jsonify(ok=False), 401
+
+
+# ---------- 书签数据 API ----------
+@app.get("/api/data")
+def api_data_get():
+    return jsonify(load_data())
+
+
+@app.post("/api/data")
+def api_data_save():
+    if not logged_in():
+        return jsonify(ok=False, msg="请先登录"), 401
+    clean = sanitize(request.get_json(silent=True))
+    if clean is None:
+        return jsonify(ok=False, msg="书签数据不合法：每条链接都需要名称和 http(s) 网址"), 400
+    save_data(clean)
+    return jsonify(ok=True)
+
+
+# ---------- 图标代理 API ----------
+@app.get("/api/icon")
+def api_icon():
+    host = request.args.get("host", "")
+    if not host or host not in known_hosts():
+        return jsonify(ok=False, msg="host 不在书签列表中"), 403
+    data = resolve_icon(host)
+    if not data:
+        return jsonify(ok=False, msg="未解析到图标"), 404
+    return send_file(io.BytesIO(data), mimetype="image/x-icon")
+
+
+# ---------- 通用：所有响应都要求浏览器重验证缓存 ----------
+@app.after_request
+def add_cache_headers(resp):
+    resp.headers.setdefault("Cache-Control", "no-cache")
+    return resp
 
 
 def main():
     load_data()  # 确保数据文件存在
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
     print(f"Nav 导航页已启动: http://127.0.0.1:{PORT}  （后台管理 http://127.0.0.1:{PORT}/admin）", flush=True)
     if USER == "admin" and PASS == "nav-admin":
         print("⚠️  正在使用默认账号 admin / nav-admin，请通过环境变量 NAV_USER / NAV_PASS 修改！", flush=True)
     try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\n已停止")
+        from waitress import serve
+        serve(app, host="0.0.0.0", port=PORT, threads=8)
+    except ImportError:
+        # 未装 waitress 时退回 Flask 自带服务器（家用足够）
+        app.run(host="0.0.0.0", port=PORT, threaded=True)
 
 
 if __name__ == "__main__":

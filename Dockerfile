@@ -1,8 +1,12 @@
-# Nav 个人导航页 —— 仅用 Python 标准库，镜像里不需要安装任何依赖
+# Nav 个人导航页 —— Flask + waitress，构建时装依赖
 FROM python:3.12-alpine
 
 WORKDIR /app
-COPY . .
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY server.py .
+COPY static ./static
 
 ENV NAV_PORT=8091
 EXPOSE 8091
