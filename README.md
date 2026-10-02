@@ -58,7 +58,7 @@ docker compose up -d --build
 | `data/bookmarks.json` | 全部书签数据，保存时自动滚动备份 |
 | `data/backups/` | 历史备份（保留最近 10 份），误删可从这里找回 |
 | `data/secret.key` | 登录会话的 HMAC 签名密钥，首次启动自动生成（权限 600，框架不会把它当静态文件暴露） |
-| `data/icons/` | 网站图标缓存：成功 7 天、失败 1 小时后自动重试；删掉即可强制重取 |
+| `data/icons/` | 网站图标缓存：成功 7 天、失败 10 分钟后自动重试；删掉即可强制重取 |
 
 - 登录：`POST /api/login` 校验账号密码（常量时间比较 + 失败延迟 0.5s），
   颁发 HttpOnly 签名 Cookie，有效期一周

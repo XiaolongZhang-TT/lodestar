@@ -245,7 +245,7 @@ def icon_cache(host):
         data = f.read()
     if data and age < 7 * 24 * 3600:   # 成功缓存 7 天
         return data
-    if not data and age < 3600:        # 失败负缓存 1 小时
+    if not data and age < 600:         # 失败负缓存 10 分钟后可重试（网络抖动恢复要快）
         return data
     return None                        # 缓存缺失或已过期
 
