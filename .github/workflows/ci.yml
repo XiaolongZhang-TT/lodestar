@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.9", "3.12", "3.14"]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -71,3 +71,20 @@ jobs:
 
       - name: Build image
         run: docker build --tag lodestar:ci .
+
+      - name: Smoke test image
+        run: |
+          docker run -d --name lodestar-ci -p 8091:8091 lodestar:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8091/api/data > /dev/null; then
+              echo "container is healthy"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs lodestar-ci
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f lodestar-ci || true
