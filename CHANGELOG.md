@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- 最低 Python 版本提升到 3.11（Python 3.9 / 3.10 已 EOL），Docker 基础镜像升级到 `python:3.14-alpine`
+- 更新 click 8.5.0、MarkupSafe 3.0.4、pytest 9.1.1
+- CI 测试矩阵改为 Python 3.11 / 3.14，并为 Docker 镜像增加启动冒烟测试
+
 ## [1.0.0] - 2026-10-19
 
 首个开源版本。

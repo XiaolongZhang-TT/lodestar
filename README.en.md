@@ -5,7 +5,7 @@
 [![CI](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/XiaolongZhang-TT/lodestar?sort=semver)](https://github.com/XiaolongZhang-TT/lodestar/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 
 > A lightweight, self-hosted personal navigation page: **single-file Flask backend + vanilla
 > frontend**, with a login-protected admin panel and JSON file storage.
@@ -67,7 +67,7 @@ docker run -d --name lodestar \
 
 ### Option 3: Run locally
 
-Requires Python 3.9+.
+Requires Python 3.11+.
 
 ```bash
 git clone https://github.com/XiaolongZhang-TT/lodestar.git

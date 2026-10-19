@@ -1,5 +1,5 @@
 # Lodestar 个人导航页 —— Flask + waitress，构建时装依赖
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 LABEL org.opencontainers.image.title="Lodestar" \
       org.opencontainers.image.description="A lightweight, self-hosted personal navigation page" \

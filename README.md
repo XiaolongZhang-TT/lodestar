@@ -5,7 +5,7 @@
 [![CI](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/XiaolongZhang-TT/lodestar?sort=semver)](https://github.com/XiaolongZhang-TT/lodestar/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 
 > 一个轻量、自托管的个人导航页：**Flask 单文件后端 + 原生前端**，带登录后台，数据落盘为 JSON。
 > **Lodestar** 意为「北极星 / 指引之星」——每个书签都是浏览途中的一颗星。
@@ -64,7 +64,7 @@ docker run -d --name lodestar \
 
 ### 方式三：本机运行
 
-需要 Python 3.9+。
+需要 Python 3.11+。
 
 ```bash
 git clone https://github.com/XiaolongZhang-TT/lodestar.git

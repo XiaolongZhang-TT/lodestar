@@ -15,7 +15,7 @@
 
 ## 开发环境
 
-需要 Python 3.9+（与 CI 一致的最低版本）。
+需要 Python 3.11+（与 CI 一致的最低版本）。
 
 ```bash
 git clone https://github.com/XiaolongZhang-TT/lodestar.git
