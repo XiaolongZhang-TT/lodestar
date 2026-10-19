@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/XiaolongZhang-TT/lodestar?sort=semver)](https://github.com/XiaolongZhang-TT/lodestar/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/acc110789/lodestar)](https://hub.docker.com/r/acc110789/lodestar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 
@@ -45,9 +46,9 @@ docker compose up -d --build
 - 主页：`http://服务器IP:8091`
 - 后台：`http://服务器IP:8091/admin`
 
-### 方式二：预构建镜像（GHCR）
+### 方式二：预构建镜像（Docker Hub / GHCR）
 
-发布 tag 后，GitHub Actions 会自动构建 `linux/amd64` + `linux/arm64` 镜像：
+发布 tag 后，GitHub Actions 会自动构建 `linux/amd64` + `linux/arm64` 镜像，并同步发布到 Docker Hub 和 GHCR：
 
 ```bash
 docker run -d --name lodestar \
@@ -56,10 +57,13 @@ docker run -d --name lodestar \
   -e NAV_PASS='换成你的强密码' \
   -v "$PWD/data:/app/data" \
   --restart unless-stopped \
-  ghcr.io/xiaolongzhang-tt/lodestar:latest
+  acc110789/lodestar:latest
 ```
 
-> 镜像地址：`ghcr.io/xiaolongzhang-tt/lodestar`（可用的 tag 见 [Releases](https://github.com/XiaolongZhang-TT/lodestar/releases)）。
+> - Docker Hub：`acc110789/lodestar`（[镜像页面](https://hub.docker.com/r/acc110789/lodestar)）
+> - GHCR：`ghcr.io/xiaolongzhang-tt/lodestar`
+>
+> 可用 tag 见 [Releases](https://github.com/XiaolongZhang-TT/lodestar/releases)。
 > 如果无法拉取，请按方式一在目标机器上构建。
 
 ### 方式三：本机运行

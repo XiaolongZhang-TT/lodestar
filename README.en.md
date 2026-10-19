@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/XiaolongZhang-TT/lodestar?sort=semver)](https://github.com/XiaolongZhang-TT/lodestar/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/acc110789/lodestar)](https://hub.docker.com/r/acc110789/lodestar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 
@@ -48,9 +49,9 @@ docker compose up -d --build
 - Home: `http://<server-ip>:8091`
 - Admin: `http://<server-ip>:8091/admin`
 
-### Option 2: Prebuilt image (GHCR)
+### Option 2: Prebuilt image (Docker Hub / GHCR)
 
-GitHub Actions builds multi-arch (`linux/amd64`, `linux/arm64`) images on every release tag:
+GitHub Actions builds multi-arch (`linux/amd64`, `linux/arm64`) images on every release tag and publishes them to Docker Hub and GHCR:
 
 ```bash
 docker run -d --name lodestar \
@@ -59,11 +60,14 @@ docker run -d --name lodestar \
   -e NAV_PASS='change-me' \
   -v "$PWD/data:/app/data" \
   --restart unless-stopped \
-  ghcr.io/xiaolongzhang-tt/lodestar:latest
+  acc110789/lodestar:latest
 ```
 
-> Image: `ghcr.io/xiaolongzhang-tt/lodestar` (see [Releases](https://github.com/XiaolongZhang-TT/lodestar/releases)
-> for tags). If the pull is denied, build from source with Option 1 instead.
+> - Docker Hub: `acc110789/lodestar` ([image page](https://hub.docker.com/r/acc110789/lodestar))
+> - GHCR: `ghcr.io/xiaolongzhang-tt/lodestar`
+>
+> See [Releases](https://github.com/XiaolongZhang-TT/lodestar/releases) for available tags.
+> If the pull is denied, build from source with Option 1 instead.
 
 ### Option 3: Run locally
 
