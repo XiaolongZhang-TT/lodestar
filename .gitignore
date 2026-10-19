@@ -11,6 +11,11 @@ data/bookmarks.private.json
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
+
+# Python 虚拟环境
+.venv/
+venv/
 
 # 编辑器本地配置
 .idea/

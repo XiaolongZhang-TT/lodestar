@@ -1,0 +1,17 @@
+# 本项目不是可安装的 Python 包，这里只放测试与 lint 的统一配置。
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试需要先把仓库根目录加入 sys.path，再导入 server
+"tests/*" = ["E402"]

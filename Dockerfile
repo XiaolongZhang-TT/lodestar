@@ -1,6 +1,11 @@
 # Lodestar 个人导航页 —— Flask + waitress，构建时装依赖
 FROM python:3.12-alpine
 
+LABEL org.opencontainers.image.title="Lodestar" \
+      org.opencontainers.image.description="A lightweight, self-hosted personal navigation page" \
+      org.opencontainers.image.source="https://github.com/XiaolongZhang-TT/lodestar" \
+      org.opencontainers.image.licenses="MIT"
+
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -8,7 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY server.py .
 COPY static ./static
 
-ENV NAV_PORT=8091
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    NAV_PORT=8091
 EXPOSE 8091
 
 # 书签数据与会话密钥都落在 /app/data，部署时挂载卷持久化

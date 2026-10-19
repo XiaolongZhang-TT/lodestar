@@ -11,8 +11,9 @@ services:
     container_name: lodestar
     restart: unless-stopped
     ports:
-      - "8091:8091"
+      - "${NAV_PORT:-8091}:${NAV_PORT:-8091}"
     environment:
+      NAV_PORT: ${NAV_PORT:-8091}
       NAV_USER: ${NAV_USER:-admin}
       NAV_PASS: ${NAV_PASS:-lodestar-admin}
     volumes:

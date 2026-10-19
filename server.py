@@ -20,7 +20,6 @@ import os
 import queue
 import re
 import secrets
-import shutil
 import ssl
 import threading
 import time
@@ -194,26 +193,35 @@ def looks_like_image(data):
     """很多 SPA 服务对任意路径都返回 200 + HTML，必须校验内容真的是图片"""
     if not data:
         return False
-    if data[:4] == b"\x89PNG":                    return True
-    if data[:3] == b"GIF8":                       return True
-    if data[:3] == b"\xff\xd8\xff":               return True  # JPEG
-    if data[:4] in (b"\x00\x00\x01\x00",          # ICO
-                    b"\x00\x00\x02\x00"):         return True  # CUR
-    if data[:2] == b"BM":                         return True  # BMP
-    if data[:4] == b"RIFF" and data[8:12] == b"WEBP": return True
-    if b"<svg" in data[:1024].lower():            return True  # SVG
+    if data[:4] == b"\x89PNG" or data[:3] == b"GIF8" or data[:3] == b"\xff\xd8\xff":
+        return True
+    if data[:4] in (b"\x00\x00\x01\x00", b"\x00\x00\x02\x00"):  # ICO / CUR
+        return True
+    if data[:2] == b"BM":  # BMP
+        return True
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return True
+    if b"<svg" in data[:1024].lower():  # SVG
+        return True
     return False
 
 
 def sniff_mime(data):
     """按内容返回正确的 MIME。SVG 必须是 image/svg+xml，浏览器才肯当图片渲染"""
-    if data[:4] == b"\x89PNG":                    return "image/png"
-    if data[:3] == b"\xff\xd8\xff":               return "image/jpeg"
-    if data[:4] == b"RIFF" and data[8:12] == b"WEBP": return "image/webp"
-    if data[:3] == b"GIF8":                       return "image/gif"
-    if data[:4] in (b"\x00\x00\x01\x00", b"\x00\x00\x02\x00"): return "image/x-icon"
-    if data[:2] == b"BM":                         return "image/bmp"
-    if b"<svg" in data[:1024].lower():            return "image/svg+xml"
+    if data[:4] == b"\x89PNG":
+        return "image/png"
+    if data[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[:3] == b"GIF8":
+        return "image/gif"
+    if data[:4] in (b"\x00\x00\x01\x00", b"\x00\x00\x02\x00"):
+        return "image/x-icon"
+    if data[:2] == b"BM":
+        return "image/bmp"
+    if b"<svg" in data[:1024].lower():
+        return "image/svg+xml"
     return "application/octet-stream"
 
 

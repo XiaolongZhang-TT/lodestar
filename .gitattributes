@@ -1,0 +1,12 @@
+# 统一换行符，避免 Windows 贡献者提交 CRLF
+* text=auto eol=lf
+
+# 二进制资源不做换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff2 binary
+
+# 文档与截图不计入 GitHub 语言统计
+docs/** linguist-documentation
