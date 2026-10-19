@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- 可选的 Docker Hub 发布工作流（配置 `DOCKERHUB_ENABLED` 与相关 Secrets 后启用）
+
 ## [1.0.0] - 2026-10-19
 
 首个开源版本。

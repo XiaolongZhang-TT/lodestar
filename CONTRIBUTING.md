@@ -79,6 +79,38 @@ docs: 补充 GHCR 镜像部署说明
 
 仓库内的 `data/bookmarks.json` 是演示数据，请勿用真实数据覆盖后提交。
 
+## 发布镜像（维护者）
+
+打 `v*` tag 后，`Publish Docker image` 工作流会自动构建 `linux/amd64` + `linux/arm64`
+镜像并推送到 GHCR：`ghcr.io/xiaolongzhang-tt/lodestar`。
+
+如需同时发布到 Docker Hub（`docker.io/<用户名>/lodestar`），首次需要：
+
+1. 在 [Docker Hub](https://hub.docker.com/) 注册账号，并在 Account Settings → Security
+   中创建 Access Token（权限选 Read & Write）
+2. 在仓库中添加 Secrets：
+   - `DOCKERHUB_USERNAME`：Docker Hub 用户名（必须全小写）
+   - `DOCKERHUB_TOKEN`：上一步生成的 Access Token
+3. 启用可选工作流：添加 Actions Variable `DOCKERHUB_ENABLED=true`
+4. 发布新的 Release，或手动运行 `Publish to Docker Hub` 工作流
+
+用 `gh` 一次完成（Token 不要提交到仓库或写进 issue）：
+
+```bash
+gh secret set DOCKERHUB_USERNAME --body "<你的用户名>"
+gh secret set DOCKERHUB_TOKEN --body "<你的 Access Token>"
+gh variable set DOCKERHUB_ENABLED --body true
+gh workflow run dockerhub-publish.yml
+```
+
+验证拉取：
+
+```bash
+docker pull docker.io/<用户名>/lodestar:latest
+```
+
+> Docker Hub 免费账号对匿名拉取有速率限制，自用 NAS 建议 `docker login` 后再拉取。
+
 ## 许可证
 
 提交贡献即表示你同意以 [MIT License](LICENSE) 授权你的贡献。

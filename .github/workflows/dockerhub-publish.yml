@@ -1,0 +1,54 @@
+name: Publish to Docker Hub
+
+# 可选工作流：配置好仓库 Secrets / Variables 后才会生效。
+# 启用步骤见 CONTRIBUTING.md 的「发布镜像」一节。
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and push to Docker Hub
+    # 默认关闭，避免 Releases 里出现失败任务；
+    # 在仓库 Variables 中设置 DOCKERHUB_ENABLED=true 后启用。
+    if: vars.DOCKERHUB_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          # Docker Hub 用户名必须全小写
+          images: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/lodestar
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
