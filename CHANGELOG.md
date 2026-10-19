@@ -5,12 +5,6 @@
 
 ## [Unreleased]
 
-### Changed
-
-- 最低 Python 版本提升到 3.11（Python 3.9 / 3.10 已 EOL），Docker 基础镜像升级到 `python:3.14-alpine`
-- 更新 click 8.5.0、MarkupSafe 3.0.4、pytest 9.1.1
-- CI 测试矩阵改为 Python 3.11 / 3.14，并为 Docker 镜像增加启动冒烟测试
-
 ## [1.0.0] - 2026-10-19
 
 首个开源版本。
@@ -27,6 +21,12 @@
 - Docker / docker compose 部署，支持 x86 与 ARM 构建
 - pytest 测试与 GitHub Actions CI、多架构 GHCR 镜像发布
 - MIT License、贡献指南、行为准则、安全策略、Issue / PR 模板
+
+### Changed
+
+- 最低 Python 版本为 3.11（Python 3.9 / 3.10 已 EOL），Docker 基础镜像为 `python:3.14-alpine`
+- 依赖版本：click 8.5.0、MarkupSafe 3.0.4、pytest 9.1.1
+- CI 测试矩阵覆盖 Python 3.11 / 3.14，并为 Docker 镜像增加启动冒烟测试
 
 ### Security
 
