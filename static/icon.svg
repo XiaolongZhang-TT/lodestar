@@ -6,9 +6,6 @@
     </linearGradient>
   </defs>
   <rect width="128" height="128" rx="30" fill="url(#g)"/>
-  <g fill="#ffffff" opacity="0.95">
-    <circle cx="45" cy="64" r="13"/>
-    <circle cx="83" cy="64" r="13"/>
-    <rect x="45" y="57" width="38" height="14" rx="7"/>
-  </g>
+  <path fill="#ffffff" opacity="0.95"
+        d="M64 14c0 27.6-22.4 50-50 50 27.6 0 50 22.4 50 50 0-27.6 22.4-50 50-50-27.6 0-50-22.4-50-50z"/>
 </svg>

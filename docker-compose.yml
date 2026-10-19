@@ -1,19 +1,19 @@
 # 用法：把整个项目目录拷到服务器后执行
 #   NAV_USER=你的账号 NAV_PASS=你的密码 docker compose up -d --build
-#   不设置时默认 admin / nav-admin（启动日志会提醒修改）
+#   不设置时默认 admin / lodestar-admin（启动日志会提醒修改）
 #   也可把账号密码写进同目录 .env 文件（两行：NAV_USER=... / NAV_PASS=...），
 #   避免留在 shell 历史里；.env 已加入 .gitignore，不会被提交
 # 数据持久化在 ./data 目录（书签 + 会话密钥），备份这个目录即可
 services:
-  nav:
+  lodestar:
     build: .
-    image: nav-me:latest
-    container_name: nav
+    image: lodestar:latest
+    container_name: lodestar
     restart: unless-stopped
     ports:
       - "8091:8091"
     environment:
       NAV_USER: ${NAV_USER:-admin}
-      NAV_PASS: ${NAV_PASS:-nav-admin}
+      NAV_PASS: ${NAV_PASS:-lodestar-admin}
     volumes:
       - ./data:/app/data

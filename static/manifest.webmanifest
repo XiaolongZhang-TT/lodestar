@@ -1,6 +1,6 @@
 {
-  "name": "Nav · 我的导航",
-  "short_name": "Nav",
+  "name": "Lodestar · 我的导航",
+  "short_name": "Lodestar",
   "description": "个人导航页",
   "start_url": "/",
   "display": "standalone",

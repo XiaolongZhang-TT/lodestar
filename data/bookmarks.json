@@ -1,0 +1,114 @@
+{
+  "title": "Lodestar · 我的导航",
+  "name": "",
+  "categories": [
+    {
+      "name": "常用",
+      "icon": "🔥",
+      "links": [
+        {
+          "name": "GitHub",
+          "url": "https://github.com",
+          "desc": "代码托管",
+          "icon": ""
+        },
+        {
+          "name": "Hacker News",
+          "url": "https://news.ycombinator.com",
+          "desc": "科技资讯",
+          "icon": ""
+        },
+        {
+          "name": "MDN Web Docs",
+          "url": "https://developer.mozilla.org",
+          "desc": "前端文档",
+          "icon": ""
+        },
+        {
+          "name": "Figma",
+          "url": "https://www.figma.com",
+          "desc": "设计协作",
+          "icon": ""
+        }
+      ]
+    },
+    {
+      "name": "工具",
+      "icon": "🧰",
+      "links": [
+        {
+          "name": "DeepSeek",
+          "url": "https://chat.deepseek.com",
+          "desc": "AI 助手",
+          "icon": ""
+        },
+        {
+          "name": "Excalidraw",
+          "url": "https://excalidraw.com",
+          "desc": "手绘白板",
+          "icon": ""
+        },
+        {
+          "name": "regex101",
+          "url": "https://regex101.com",
+          "desc": "正则调试",
+          "icon": ""
+        },
+        {
+          "name": "JSON Crack",
+          "url": "https://jsoncrack.com",
+          "desc": "JSON 可视化",
+          "icon": ""
+        }
+      ]
+    },
+    {
+      "name": "阅读",
+      "icon": "📚",
+      "links": [
+        {
+          "name": "少数派",
+          "url": "https://sspai.com",
+          "desc": "效率与生活",
+          "icon": ""
+        },
+        {
+          "name": "阮一峰的网络日志",
+          "url": "https://www.ruanyifeng.com/blog/",
+          "desc": "技术随笔",
+          "icon": ""
+        },
+        {
+          "name": "The Verge",
+          "url": "https://www.theverge.com",
+          "desc": "科技媒体",
+          "icon": ""
+        }
+      ]
+    },
+    {
+      "name": "影音",
+      "icon": "🎬",
+      "links": [
+        {
+          "name": "YouTube",
+          "url": "https://www.youtube.com",
+          "desc": "视频",
+          "icon": ""
+        },
+        {
+          "name": "哔哩哔哩",
+          "url": "https://www.bilibili.com",
+          "desc": "视频",
+          "icon": ""
+        },
+        {
+          "name": "Spotify",
+          "url": "https://open.spotify.com",
+          "desc": "音乐",
+          "icon": ""
+        }
+      ]
+    }
+  ]
+}

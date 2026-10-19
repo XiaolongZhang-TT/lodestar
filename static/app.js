@@ -1,5 +1,5 @@
 /* =========================================================
- *  Nav · 个人导航页 —— 前台逻辑
+ *  Lodestar · 个人导航页 —— 前台逻辑
  *  书签数据来自后端 /api/data（在 /admin 后台维护）
  *  三个独立小模块：主题 / 时钟 / 书签渲染
  * ========================================================= */
@@ -64,7 +64,7 @@ function hostOf(url) {
   try { return new URL(url).hostname; } catch { return ""; }
 }
 
-/* 带端口的 host（如 www.example.com:10001），图标解析需要它区分同一域名的不同服务 */
+/* 带端口的 host（如 media.example.com:10001），图标解析需要它区分同一域名的不同服务 */
 function netlocOf(url) {
   try { return new URL(url).host; } catch { return ""; }
 }
@@ -178,7 +178,7 @@ async function boot() {
     const res = await fetch("/api/data", { signal: ctrl.signal });
     if (!res.ok) throw new Error();
     STATE = await res.json();
-    document.title = STATE.title || "Nav";
+    document.title = STATE.title || "Lodestar";
     renderCategories(STATE.categories);
   } catch {
     $("#categories").innerHTML =

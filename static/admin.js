@@ -1,5 +1,5 @@
 /* =========================================================
- *  Nav · 后台管理 —— 登录 + 书签增删改
+ *  Lodestar · 后台管理 —— 登录 + 书签增删改
  *  未登录渲染登录卡片；登录后渲染编辑器，保存时整体提交
  * ========================================================= */
 
@@ -58,7 +58,7 @@ async function boot() {
 function renderLogin(msg = "") {
   $("#app").innerHTML = `
     <form class="admin-login" id="loginForm">
-      <h1>Nav 后台</h1>
+      <h1>Lodestar 后台</h1>
       <input id="user" placeholder="用户名" autocomplete="username" required>
       <input id="pass" type="password" placeholder="密码" autocomplete="current-password" required>
       <button class="btn" type="submit">登 录</button>
@@ -91,7 +91,7 @@ function renderEditor() {
     </header>
 
     <div class="admin-meta">
-      <label>页面标题 <input id="metaTitle" placeholder="Nav · 我的导航"></label>
+      <label>页面标题 <input id="metaTitle" placeholder="Lodestar · 我的导航"></label>
       <label>问候名字 <input id="metaName" placeholder="留空则只显示问候语"></label>
     </div>
 

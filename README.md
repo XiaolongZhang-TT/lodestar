@@ -1,7 +1,9 @@
-# Nav · 个人导航页
+# Lodestar · 个人导航页
 
 一个轻量的个人导航页（Flare 替代品）：**Flask 单文件后端 + 原生前端**，
 带登录后台管理，数据落盘为 JSON。书签已从原 Flare 实例全部迁移。
+
+> **Lodestar** 意为「北极星 / 指引之星」——每个书签都是浏览途中的一颗星。
 
 ## 功能
 
@@ -15,14 +17,15 @@
 ## 快速开始（本机）
 
 ```bash
-cd nav_me
+git clone https://github.com/XiaolongZhang-TT/lodestar.git
+cd lodestar
 pip install -r requirements.txt
 python3 server.py
 # 主页  http://127.0.0.1:8091
 # 后台  http://127.0.0.1:8091/admin
 ```
 
-默认账号 `admin` / `nav-admin`（启动日志会提醒修改）。**正式部署务必换掉**：
+默认账号 `admin` / `lodestar-admin`（启动日志会提醒修改）。**正式部署务必换掉**：
 
 ```bash
 NAV_USER=你的用户名 NAV_PASS=你的密码 python3 server.py
@@ -49,7 +52,7 @@ docker compose up -d --build
   备份这个目录即可；`data/` 不会被打进镜像
 - 更新版本：代码更新后再执行一次 `docker compose up -d --build`
 
-建议置于反向代理之后提供 HTTPS（沿用你现有的 example.com 域名即可）。
+建议置于反向代理之后提供 HTTPS（沿用你现有的个人域名即可）。
 
 ## 数据与安全
 
@@ -59,6 +62,9 @@ docker compose up -d --build
 | `data/backups/` | 历史备份（保留最近 10 份），误删可从这里找回 |
 | `data/secret.key` | 登录会话的 HMAC 签名密钥，首次启动自动生成（权限 600，框架不会把它当静态文件暴露） |
 | `data/icons/` | 网站图标缓存：成功 7 天、失败 10 分钟后自动重试；删掉即可强制重取 |
+
+> 仓库自带的 `data/bookmarks.json` 是**演示数据**；真实书签请只在本地维护
+> （可存为 `data/bookmarks.private.json`，已被 `.gitignore` 忽略），不要提交。
 
 - 登录：`POST /api/login` 校验账号密码（常量时间比较 + 失败延迟 0.5s），
   颁发 HttpOnly 签名 Cookie，有效期一周
@@ -85,7 +91,7 @@ docker compose up -d --build
 ## 文件结构
 
 ```
-nav_me/
+lodestar/
 ├── server.py            # Flask 后端：路由按「方法 + 路径」逐个拆分
 ├── requirements.txt     # Python 依赖（已锁版本）
 ├── tests/               # 纯函数单元测试（pytest）

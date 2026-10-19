@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ==========================================================
-#  Nav · 个人导航页 —— 后端服务（Flask）
+#  Lodestar · 个人导航页 —— 后端服务（Flask）
 #
 #  启动:  pip install -r requirements.txt
 #         python3 server.py
@@ -36,11 +36,11 @@ BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 BACKUP_KEEP = 10
 
 USER = os.environ.get("NAV_USER", "admin")
-PASS = os.environ.get("NAV_PASS", "nav-admin")
+PASS = os.environ.get("NAV_PASS", "lodestar-admin")
 PORT = int(os.environ.get("NAV_PORT", "8091"))
 
 SESSION_HOURS = 24 * 7      # 登录会话有效期：一周
-DEFAULT_DATA = {"title": "Nav · 我的导航", "name": "", "categories": []}
+DEFAULT_DATA = {"title": "Lodestar · 我的导航", "name": "", "categories": []}
 
 
 # =========================================================
@@ -179,7 +179,7 @@ def known_hosts():
 
 
 def fetch_url(url, timeout=5, max_bytes=512 * 1024):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 nav-icon-fetcher"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 lodestar-icon-fetcher"})
     for attempt in (1, 2):  # 失败立即重试一次，消除瞬时网络抖动
         try:
             with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
@@ -334,7 +334,7 @@ def sanitize(data):
             "links": links,
         })
     return {
-        "title": str(data.get("title", "")).strip() or "Nav · 我的导航",
+        "title": str(data.get("title", "")).strip() or "Lodestar · 我的导航",
         "name": str(data.get("name", "")).strip(),
         "categories": categories,
     }, None
@@ -444,9 +444,9 @@ def add_cache_headers(resp):
 
 def main():
     load_data()  # 确保数据文件存在
-    print(f"Nav 导航页已启动: http://127.0.0.1:{PORT}  （后台管理 http://127.0.0.1:{PORT}/admin）", flush=True)
-    if USER == "admin" and PASS == "nav-admin":
-        print("⚠️  正在使用默认账号 admin / nav-admin，请通过环境变量 NAV_USER / NAV_PASS 修改！", flush=True)
+    print(f"Lodestar 导航页已启动: http://127.0.0.1:{PORT}  （后台管理 http://127.0.0.1:{PORT}/admin）", flush=True)
+    if USER == "admin" and PASS == "lodestar-admin":
+        print("⚠️  正在使用默认账号 admin / lodestar-admin，请通过环境变量 NAV_USER / NAV_PASS 修改！", flush=True)
 
     threading.Thread(target=_icon_worker, daemon=True).start()
     warm_icons()  # 启动即预热全部图标

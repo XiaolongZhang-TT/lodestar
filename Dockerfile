@@ -1,4 +1,4 @@
-# Nav 个人导航页 —— Flask + waitress，构建时装依赖
+# Lodestar 个人导航页 —— Flask + waitress，构建时装依赖
 FROM python:3.12-alpine
 
 WORKDIR /app
