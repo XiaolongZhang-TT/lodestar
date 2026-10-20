@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-20
+
 ### Added
 
 - 可选的 Docker Hub 发布工作流（配置 `DOCKERHUB_ENABLED` 与相关 Secrets 后启用）
@@ -53,5 +55,6 @@
 - 图标代理仅允许书签中出现过的 host，避免被滥用为公开代理
 - 仓库仅包含演示书签数据，真实数据通过 `.gitignore` 排除
 
-[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.1
 [1.0.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.0
