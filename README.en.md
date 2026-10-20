@@ -51,7 +51,20 @@ docker compose up -d --build
 
 ### Option 2: Prebuilt image (Docker Hub / GHCR)
 
-GitHub Actions builds multi-arch (`linux/amd64`, `linux/arm64`) images on every release tag and publishes them to Docker Hub and GHCR:
+GitHub Actions builds multi-arch (`linux/amd64`, `linux/arm64`) images on every release tag and publishes them to Docker Hub and GHCR.
+
+**Start with docker compose (recommended, no local build)**:
+
+```bash
+cp .env.example .env      # at least change NAV_PASS
+docker compose -f docker-compose.image.yml up -d
+```
+
+- If you already have a data directory, set `LODESTAR_DATA_DIR=/path/to/data` in `.env`
+- Pin a version with `LODESTAR_IMAGE=acc110789/lodestar:1.0.1`
+- You can also copy the file to `docker-compose.yml` and run `docker compose up -d`
+
+Or run directly with `docker run`:
 
 ```bash
 docker run -d --name lodestar \
@@ -161,7 +174,7 @@ lodestar/
 ├── tests/               # pytest: pure functions + API tests
 ├── docs/                # README screenshots
 ├── .github/             # CI, image publishing, Dependabot, issue/PR templates
-├── Dockerfile / docker-compose.yml
+├── Dockerfile / docker-compose.yml / docker-compose.image.yml
 ├── requirements.txt / requirements-dev.txt
 ├── pyproject.toml       # pytest / ruff configuration
 ├── Makefile

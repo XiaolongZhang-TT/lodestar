@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- 新增 `docker-compose.image.yml`，可直接使用预构建镜像运行，无需在目标机器上构建
+
 ## [1.0.1] - 2026-10-20
 
 ### Added

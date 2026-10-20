@@ -1,0 +1,25 @@
+# 使用预构建镜像的 docker compose 配置（不在本地构建）
+#
+# 用法：
+#   cp .env.example .env        # 至少修改 NAV_PASS
+#   docker compose -f docker-compose.image.yml up -d
+#
+# 已有数据目录时，在 .env 里加：
+#   LODESTAR_DATA_DIR=/volume1/docker/lodestar/data
+#
+# 固定镜像版本（推荐），在 .env 里加：
+#   LODESTAR_IMAGE=acc110789/lodestar:1.0.1
+
+services:
+  lodestar:
+    image: ${LODESTAR_IMAGE:-acc110789/lodestar:1.0.1}
+    container_name: ${LODESTAR_CONTAINER:-lodestar}
+    restart: unless-stopped
+    ports:
+      - "${NAV_PORT:-8091}:${NAV_PORT:-8091}"
+    environment:
+      NAV_PORT: ${NAV_PORT:-8091}
+      NAV_USER: ${NAV_USER:-admin}
+      NAV_PASS: ${NAV_PASS:?请在 .env 中设置 NAV_PASS}
+    volumes:
+      - ${LODESTAR_DATA_DIR:-./data}:/app/data

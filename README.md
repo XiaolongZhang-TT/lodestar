@@ -48,7 +48,20 @@ docker compose up -d --build
 
 ### 方式二：预构建镜像（Docker Hub / GHCR）
 
-发布 tag 后，GitHub Actions 会自动构建 `linux/amd64` + `linux/arm64` 镜像，并同步发布到 Docker Hub 和 GHCR：
+发布 tag 后，GitHub Actions 会自动构建 `linux/amd64` + `linux/arm64` 镜像，并同步发布到 Docker Hub 和 GHCR。
+
+**用 docker compose 启动（推荐，不需要本地构建）**：
+
+```bash
+cp .env.example .env      # 至少修改 NAV_PASS
+docker compose -f docker-compose.image.yml up -d
+```
+
+- 已有数据目录时，在 `.env` 中设置 `LODESTAR_DATA_DIR=/你的路径/data`
+- 想固定版本可设置 `LODESTAR_IMAGE=acc110789/lodestar:1.0.1`
+- 也可以把这个文件复制为 `docker-compose.yml` 后直接 `docker compose up -d`
+
+也可以直接 `docker run`：
 
 ```bash
 docker run -d --name lodestar \
@@ -156,7 +169,7 @@ lodestar/
 ├── tests/               # pytest：纯函数 + API 测试
 ├── docs/                # README 截图
 ├── .github/             # CI、镜像发布、Dependabot、Issue / PR 模板
-├── Dockerfile / docker-compose.yml
+├── Dockerfile / docker-compose.yml / docker-compose.image.yml
 ├── requirements.txt / requirements-dev.txt
 ├── pyproject.toml       # pytest / ruff 配置
 ├── Makefile
