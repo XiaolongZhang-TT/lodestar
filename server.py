@@ -187,16 +187,22 @@ def known_hosts():
     return hosts_of(load_data())
 
 
-def fetch_url(url, timeout=5, max_bytes=ICON_MAX_BYTES):
+def fetch(url, timeout=5, max_bytes=ICON_MAX_BYTES):
+    """请求 URL，返回 (内容, 最终 URL)；urllib 会自动跟随重定向"""
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 lodestar-icon-fetcher"})
     for attempt in (1, 2):  # 失败立即重试一次，消除瞬时网络抖动
         try:
             with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
-                return r.read(max_bytes)
+                return r.read(max_bytes), r.geturl()
         except Exception:
             if attempt == 2:
                 raise
             time.sleep(1)
+
+
+def fetch_url(url, timeout=5, max_bytes=ICON_MAX_BYTES):
+    """只要内容（兼容只关心字节的调用方）"""
+    return fetch(url, timeout=timeout, max_bytes=max_bytes)[0]
 
 
 def _svg_head(data):
@@ -356,8 +362,9 @@ def manifest_icon_urls(manifest_url, max_icons=3):
     try:
         if manifest_url.lower().startswith("data:"):
             raw = decode_data_uri(manifest_url)
+            manifest_base = manifest_url
         else:
-            raw = fetch_url(manifest_url)
+            raw, manifest_base = fetch(manifest_url)
         manifest = json.loads(raw.decode("utf-8", "ignore"))
         icons = manifest.get("icons", []) if isinstance(manifest, dict) else []
     except Exception:
@@ -370,7 +377,7 @@ def manifest_icon_urls(manifest_url, max_icons=3):
         if src:
             candidates.append((_parse_size(icon.get("sizes")), src))
     candidates.sort(key=lambda item: item[0], reverse=True)
-    return _dedupe([urllib.parse.urljoin(manifest_url, src) for _, src in candidates])[:max_icons]
+    return _dedupe([urllib.parse.urljoin(manifest_base, src) for _, src in candidates])[:max_icons]
 
 
 def _load_icon(url):
@@ -439,8 +446,10 @@ def resolve_icon(host):
 
         if not data:
             try:  # 2) 首页声明的 icon（含 data: URI）、apple-touch-icon、mask-icon
-                html = fetch_url(base).decode("utf-8", "ignore")
-                icon_urls, manifest_urls = parse_icon_links(html, base)
+                page, final_url = fetch(base)
+                html = page.decode("utf-8", "ignore")
+                # 用重定向后的最终地址作为基准，./icon.png 这类相对路径才能拼对
+                icon_urls, manifest_urls = parse_icon_links(html, final_url)
                 for url in icon_urls[:MAX_ICON_CANDIDATES]:
                     data = _load_icon(url)
                     if data:

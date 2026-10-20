@@ -16,6 +16,7 @@
 - 支持 apple-touch-icon、mask-icon 与 Web App Manifest 图标（按尺寸选大图）
 - 自动丢弃旧版误缓存的非图片数据；前端图标 URL 升级到 `v=3` 强制刷新
 - 图标候选地址只允许 http(s) / data:，拒绝 `file:` 等 scheme
+- 解析图标时使用重定向后的最终 URL 作为相对路径基准，修复 `/` → `/app/` 这类站点（如 Navidrome）取不到图标
 
 ### Changed
 

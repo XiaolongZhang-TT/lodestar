@@ -35,7 +35,7 @@ def icon_dir(tmp_path, monkeypatch):
 
 
 def fake_fetch(routes):
-    """routes: {url: bytes | callable | Exception}"""
+    """routes: {url: bytes | (bytes, final_url) | callable | Exception}"""
     calls = []
 
     def fetch(url, timeout=5, max_bytes=server.ICON_MAX_BYTES):
@@ -45,7 +45,10 @@ def fake_fetch(routes):
             raise OSError(f"unexpected url: {url}")
         if isinstance(handler, BaseException):
             raise handler
-        return handler() if callable(handler) else handler
+        payload = handler() if callable(handler) else handler
+        if isinstance(payload, tuple):
+            return payload
+        return payload, url
 
     return fetch, calls
 
@@ -130,7 +133,7 @@ def test_resolve_icon_from_inline_data_uri(icon_dir, monkeypatch):
         "https://example.com/favicon.ico": SPA_HTML,   # SPA fallback：HTML 而非图片
         "https://example.com/": SPA_HTML,
     })
-    monkeypatch.setattr(server, "fetch_url", fetch)
+    monkeypatch.setattr(server, "fetch", fetch)
 
     data = server.resolve_icon("example.com")
     assert data == SVG
@@ -142,6 +145,33 @@ def test_resolve_icon_from_inline_data_uri(icon_dir, monkeypatch):
     assert len(calls) == 2
 
 
+def test_resolve_icon_uses_redirected_base(icon_dir, monkeypatch):
+    """站点把 / 重定向到 /app/ 时，./icon.png 要基于最终地址解析（Navidrome 场景）"""
+    html = b'<html><head><link rel="icon" href="./icon.png"></head></html>'
+    fetch, calls = fake_fetch({
+        "https://example.com/favicon.ico": OSError("404"),
+        "https://example.com/": (html, "https://example.com/app/"),
+        "https://example.com/app/icon.png": PNG,
+    })
+    monkeypatch.setattr(server, "fetch", fetch)
+
+    assert server.resolve_icon("example.com") == PNG
+    assert "https://example.com/app/icon.png" in calls
+
+
+def test_manifest_icons_use_redirected_base(monkeypatch):
+    manifest = json.dumps({"icons": [{"src": "./icon.png", "sizes": "64x64"}]}).encode()
+    fetch, _ = fake_fetch({
+        "https://example.com/manifest.webmanifest": (
+            manifest, "https://example.com/app/manifest.webmanifest",
+        ),
+    })
+    monkeypatch.setattr(server, "fetch", fetch)
+
+    urls = server.manifest_icon_urls("https://example.com/manifest.webmanifest")
+    assert urls == ["https://example.com/app/icon.png"]
+
+
 def test_resolve_icon_from_apple_touch(icon_dir, monkeypatch):
     html = b'<html><head><link rel="apple-touch-icon" href="/apple.png"></head></html>'
     fetch, _ = fake_fetch({
@@ -149,7 +179,7 @@ def test_resolve_icon_from_apple_touch(icon_dir, monkeypatch):
         "https://example.com/": html,
         "https://example.com/apple.png": ICO,
     })
-    monkeypatch.setattr(server, "fetch_url", fetch)
+    monkeypatch.setattr(server, "fetch", fetch)
     assert server.resolve_icon("example.com") == ICO
 
 
@@ -166,7 +196,7 @@ def test_resolve_icon_from_manifest(icon_dir, monkeypatch):
         "https://example.com/icon-512.png": PNG,
         "https://example.com/icon-64.png": PNG_SMALL,
     })
-    monkeypatch.setattr(server, "fetch_url", fetch)
+    monkeypatch.setattr(server, "fetch", fetch)
 
     assert server.resolve_icon("example.com") == PNG
     assert "https://example.com/icon-512.png" in calls
@@ -182,7 +212,7 @@ def test_reject_non_http_icon_schemes(icon_dir, monkeypatch):
         "https://example.com/favicon.ico": OSError("404"),
         "https://example.com/": html,
     })
-    monkeypatch.setattr(server, "fetch_url", fetch)
+    monkeypatch.setattr(server, "fetch", fetch)
 
     assert server.resolve_icon("example.com") == b""
     assert calls == ["https://example.com/favicon.ico", "https://example.com/"]
@@ -197,7 +227,7 @@ def test_resolve_icon_failure_uses_negative_cache(icon_dir, monkeypatch):
         "https://example.com/favicon.ico": OSError("404"),
         "https://example.com/": OSError("timeout"),
     })
-    monkeypatch.setattr(server, "fetch_url", fetch)
+    monkeypatch.setattr(server, "fetch", fetch)
 
     assert server.resolve_icon("example.com") == b""
     assert (icon_dir / "example.com").read_bytes() == b""
