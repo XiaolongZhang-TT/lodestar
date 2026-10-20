@@ -83,9 +83,9 @@ function cardHTML(link, index) {
   if (link.icon) {
     icon = `<span class="emoji">${esc(link.icon)}</span>`;
   } else if (netlocOf(link.url)) {
-    // 由后端解析网站图标（favicon.ico / 页面声明的图标），失败再退回首字母
-    // v=2：图标服务端曾修复 MIME/viewBox，版本号变化可击穿旧缓存
-    icon = `<img class="favicon" src="/api/icon?v=3&host=${encodeURIComponent(netlocOf(link.url))}" alt="" loading="lazy">`;
+    // 先显示首字母占位，图标加载成功后再覆盖；加载失败则保留首字母
+    // v=3：图标服务端曾修复 MIME/viewBox，版本号变化可击穿旧缓存
+    icon = `${letterHTML(link.name)}<img class="favicon" src="/api/icon?v=3&host=${encodeURIComponent(netlocOf(link.url))}" alt="" loading="lazy">`;
   } else {
     icon = letterHTML(link.name);
   }
@@ -100,8 +100,10 @@ function cardHTML(link, index) {
 }
 
 function letterHTML(name) {
-  const [c1, c2] = LETTER_COLORS[[...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % LETTER_COLORS.length];
-  return `<span class="letter" style="background:linear-gradient(135deg,${c1},${c2})">${esc(name[0].toUpperCase())}</span>`;
+  const chars = [...(name || "?")];
+  const first = chars[0] || "?";
+  const [c1, c2] = LETTER_COLORS[chars.reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % LETTER_COLORS.length];
+  return `<span class="letter" style="background:linear-gradient(135deg,${c1},${c2})">${esc(first.toUpperCase())}</span>`;
 }
 
 function renderCategories(cats) {
@@ -123,8 +125,14 @@ function renderCategories(cats) {
       <div class="links">${cat.links.map(cardHTML).join("")}</div>
     </section>`).join("");
 
-  // 图标加载失败：先自动重试两次（后台可能正在解析），仍失败才用首字母方块
+  // 图标位默认显示首字母；图片加载成功后覆盖首字母，失败则重试两次后保留首字母
   root.querySelectorAll(".favicon").forEach((img) => {
+    const show = () => {
+      img.classList.add("is-ready");
+      const letter = img.parentElement?.querySelector(".letter");
+      if (letter) letter.style.visibility = "hidden";
+    };
+    img.addEventListener("load", show);
     img.addEventListener("error", () => {
       const tries = +(img.dataset.retry || 0);
       if (tries < 2) {
@@ -133,10 +141,10 @@ function renderCategories(cats) {
           img.src = img.src.replace(/&r=\d*/, "") + `&r=${tries + 1}`;
         }, 3000);
       } else {
-        const tile = img.closest(".icon-tile");
-        tile.innerHTML = letterHTML(tile.dataset.name);
+        img.remove();   // 保留底层首字母，不再出现空白块
       }
     });
+    if (img.complete && img.naturalWidth > 0) show();   // 极快命中缓存时补一次
   });
 }
 
