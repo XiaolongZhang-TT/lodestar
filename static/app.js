@@ -85,7 +85,7 @@ function cardHTML(link, index) {
   } else if (netlocOf(link.url)) {
     // 由后端解析网站图标（favicon.ico / 页面声明的图标），失败再退回首字母
     // v=2：图标服务端曾修复 MIME/viewBox，版本号变化可击穿旧缓存
-    icon = `<img class="favicon" src="/api/icon?v=2&host=${encodeURIComponent(netlocOf(link.url))}" alt="" loading="lazy">`;
+    icon = `<img class="favicon" src="/api/icon?v=3&host=${encodeURIComponent(netlocOf(link.url))}" alt="" loading="lazy">`;
   } else {
     icon = letterHTML(link.name);
   }

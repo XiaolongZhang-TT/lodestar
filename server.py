@@ -12,6 +12,7 @@
 #         data/icons/           网站图标缓存
 # ==========================================================
 
+import base64
 import hashlib
 import hmac
 import io
@@ -25,6 +26,7 @@ import threading
 import time
 import urllib.parse
 import urllib.request
+from html.parser import HTMLParser
 
 from flask import Flask, jsonify, request, send_file
 
@@ -158,6 +160,9 @@ def logged_in():
 #  图标解析：只在后台线程做网络请求，请求线程永不阻塞
 # =========================================================
 ICON_DIR = os.path.join(DATA_DIR, "icons")
+ICON_MAX_BYTES = 512 * 1024
+MAX_ICON_CANDIDATES = 6      # 首页 icon 链接最多尝试几个
+MAX_MANIFEST_CANDIDATES = 2  # manifest 最多尝试几个
 ICON_LOCK = threading.Lock()     # 串行解析，避免并发冲击同一域名
 ICON_QUEUE = queue.Queue()       # 待解析任务队列（后台 worker 消费）
 SSL_CTX = ssl.create_default_context()
@@ -177,7 +182,7 @@ def known_hosts():
     return hosts
 
 
-def fetch_url(url, timeout=5, max_bytes=512 * 1024):
+def fetch_url(url, timeout=5, max_bytes=ICON_MAX_BYTES):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 lodestar-icon-fetcher"})
     for attempt in (1, 2):  # 失败立即重试一次，消除瞬时网络抖动
         try:
@@ -187,6 +192,38 @@ def fetch_url(url, timeout=5, max_bytes=512 * 1024):
             if attempt == 2:
                 raise
             time.sleep(1)
+
+
+def _svg_head(data):
+    """跳过 BOM / XML 声明 / 注释，返回 SVG 根标签附近的头部；不是 SVG 时返回 b"""""
+    head = data[:2048]
+    if head.startswith(b"\xef\xbb\xbf"):
+        head = head[3:]
+    head = head.lstrip()
+    if head[:5].lower() == b"<?xml":
+        end = head.find(b"?>")
+        if end < 0:
+            return b""
+        head = head[end + 2:].lstrip()
+    while head.startswith(b"<!--"):
+        end = head.find(b"-->")
+        if end < 0:
+            return b""
+        head = head[end + 3:].lstrip()
+    return head
+
+
+def is_svg_image(data):
+    """严格判断 SVG：根元素必须是完整的 <svg>，避免 HTML 里的内联 <svg 片段被误判"""
+    head = _svg_head(data)
+    if head[:4].lower() != b"<svg":
+        return False
+    tag_end = head.find(b">")
+    if tag_end < 0:               # <svg 标签都没闭合，肯定不是有效图片
+        return False
+    if head[:tag_end].rstrip().endswith(b"/"):   # <svg ... />
+        return True
+    return b"</svg" in data.lower()
 
 
 def looks_like_image(data):
@@ -201,9 +238,7 @@ def looks_like_image(data):
         return True
     if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return True
-    if b"<svg" in data[:1024].lower():  # SVG
-        return True
-    return False
+    return is_svg_image(data)
 
 
 def sniff_mime(data):
@@ -220,9 +255,132 @@ def sniff_mime(data):
         return "image/x-icon"
     if data[:2] == b"BM":
         return "image/bmp"
-    if b"<svg" in data[:1024].lower():
+    if is_svg_image(data):
         return "image/svg+xml"
     return "application/octet-stream"
+
+
+# ---------- data: URI 图标 ----------
+_DATA_URI_RE = re.compile(r"^data:([^,]*),(.*)$", re.S | re.I)
+
+
+def decode_data_uri(uri, max_bytes=ICON_MAX_BYTES):
+    """解码 data: URI（支持 base64 与百分号编码），不是合法 data URI 时返回 b"""""
+    m = _DATA_URI_RE.match((uri or "").strip())
+    if not m:
+        return b""
+    meta, payload = m.group(1), m.group(2)
+    try:
+        if ";base64" in meta.lower():
+            raw = base64.b64decode(payload + "=" * (-len(payload) % 4))
+        else:
+            raw = urllib.parse.unquote_to_bytes(payload)
+    except Exception:
+        return b""
+    return raw if 0 < len(raw) <= max_bytes else b""
+
+
+# ---------- 从 HTML 里解析图标声明 ----------
+class _IconLinkParser(HTMLParser):
+    """用 HTMLParser 解析 <link>，正确处理多行标签、单双引号与 data: URI"""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.base = ""
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = {k.lower(): (v or "").strip() for k, v in attrs}
+        if tag.lower() == "base":
+            if not self.base:
+                self.base = attrs.get("href", "")
+        elif tag.lower() == "link":
+            rel = attrs.get("rel", "").lower().split()
+            href = attrs.get("href", "")
+            if rel and href:
+                self.links.append((rel, href))
+
+
+def _dedupe(items):
+    seen = set()
+    out = []
+    for item in items:
+        if item and item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out
+
+
+def parse_icon_links(html, page_url):
+    """返回 (icon_urls, manifest_urls)，图标按 favicon → apple-touch-icon → mask-icon 排序"""
+    parser = _IconLinkParser()
+    try:
+        parser.feed(html)
+    except Exception:
+        pass
+    base = urllib.parse.urljoin(page_url, parser.base) if parser.base else page_url
+    icons, apple, mask, manifests = [], [], [], []
+    for rel, href in parser.links:
+        rel_text = " ".join(rel)
+        if "manifest" in rel:
+            manifests.append(urllib.parse.urljoin(base, href))
+        elif "apple-touch-icon" in rel_text:
+            apple.append(urllib.parse.urljoin(base, href))
+        elif "mask-icon" in rel_text:
+            mask.append(urllib.parse.urljoin(base, href))
+        elif "icon" in rel:
+            icons.append(urllib.parse.urljoin(base, href))
+    return _dedupe(icons + apple + mask), _dedupe(manifests)
+
+
+def _parse_size(sizes):
+    """把 manifest 的 sizes（如 "16x16 32x32"）转成面积，用于优先选大图"""
+    best = 0
+    for part in str(sizes or "").lower().split():
+        w, sep, h = part.partition("x")
+        if sep and w.isdigit() and h.isdigit():
+            best = max(best, int(w) * int(h))
+    return best
+
+
+def manifest_icon_urls(manifest_url, max_icons=3):
+    """读取 Web App Manifest 的 icons，按尺寸从大到小返回图标 URL"""
+    manifest_url = (manifest_url or "").strip()
+    if not manifest_url.lower().startswith(("http://", "https://", "data:")):
+        return []
+    try:
+        if manifest_url.lower().startswith("data:"):
+            raw = decode_data_uri(manifest_url)
+        else:
+            raw = fetch_url(manifest_url)
+        manifest = json.loads(raw.decode("utf-8", "ignore"))
+        icons = manifest.get("icons", []) if isinstance(manifest, dict) else []
+    except Exception:
+        return []
+    candidates = []
+    for icon in icons:
+        if not isinstance(icon, dict):
+            continue
+        src = str(icon.get("src", "")).strip()
+        if src:
+            candidates.append((_parse_size(icon.get("sizes")), src))
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    return _dedupe([urllib.parse.urljoin(manifest_url, src) for _, src in candidates])[:max_icons]
+
+
+def _load_icon(url):
+    """取单个候选图标（支持 data: URI 与 http(s)），内容不是图片则返回 b"""""
+    try:
+        url = (url or "").strip()
+        if url.lower().startswith("data:"):
+            data = decode_data_uri(url)
+        elif re.match(r"^https?://", url, re.I):
+            data = fetch_url(url)
+        else:  # file: / javascript: 等一律拒绝，避免被页面声明利用读取本地文件
+            return b""
+        return data if looks_like_image(data) else b""
+    except Exception:
+        return b""
 
 
 def normalize_svg(data):
@@ -233,8 +391,8 @@ def normalize_svg(data):
         if not m or "viewBox" in m.group(0):
             return data
         tag = m.group(0)
-        w = re.search(r'width="([\d.]+)"', tag)
-        h = re.search(r'height="([\d.]+)"', tag)
+        w = re.search(r"""width=["']([\d.]+)["']""", tag)
+        h = re.search(r"""height=["']([\d.]+)["']""", tag)
         if not (w and h):
             return data
         patched = tag.replace("<svg", f'<svg viewBox="0 0 {w.group(1)} {h.group(1)}"', 1)
@@ -252,7 +410,7 @@ def icon_cache(host):
     with open(cache, "rb") as f:
         data = f.read()
     if data and age < 7 * 24 * 3600:   # 成功缓存 7 天
-        return data
+        return data if looks_like_image(data) else None   # 兼容旧版误缓存的 HTML
     if not data and age < 600:         # 失败负缓存 10 分钟后可重试（网络抖动恢复要快）
         return data
     return None                        # 缓存缺失或已过期
@@ -266,21 +424,30 @@ def resolve_icon(host):
             return cached
 
         data = b""
-        try:
-            got = fetch_url(f"https://{host}/favicon.ico")
+        base = f"https://{host}/"
+        try:  # 1) 标准路径 /favicon.ico
+            got = fetch_url(base + "favicon.ico")
             if looks_like_image(got):
                 data = got
         except Exception:
             pass
+
         if not data:
-            try:  # 抓首页，解析 <link rel="icon" href="..."> 再下载
-                html = fetch_url(f"https://{host}/").decode("utf-8", "ignore")
-                m = (re.search(r'<link[^>]+rel=["\'](?:shortcut )?icon["\'][^>]*href=["\']([^"\']+)["\']', html, re.I)
-                     or re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]*rel=["\'](?:shortcut )?icon["\']', html, re.I))
-                if m:
-                    got = fetch_url(urllib.parse.urljoin(f"https://{host}/", m.group(1)))
-                    if looks_like_image(got):
-                        data = got
+            try:  # 2) 首页声明的 icon（含 data: URI）、apple-touch-icon、mask-icon
+                html = fetch_url(base).decode("utf-8", "ignore")
+                icon_urls, manifest_urls = parse_icon_links(html, base)
+                for url in icon_urls[:MAX_ICON_CANDIDATES]:
+                    data = _load_icon(url)
+                    if data:
+                        break
+                if not data:  # 3) Web App Manifest 里的 icons
+                    for manifest_url in manifest_urls[:MAX_MANIFEST_CANDIDATES]:
+                        for url in manifest_icon_urls(manifest_url):
+                            data = _load_icon(url)
+                            if data:
+                                break
+                        if data:
+                            break
             except Exception:
                 pass
 

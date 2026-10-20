@@ -9,6 +9,14 @@
 
 - 可选的 Docker Hub 发布工作流（配置 `DOCKERHUB_ENABLED` 与相关 Secrets 后启用）
 
+### Fixed
+
+- 修复 SPA 页面把 HTML 里的内联 `<svg` 误判为图标、从而缓存整页 HTML 的问题
+- 图标解析改用 HTMLParser：支持多行 `<link>`、单双引号与 data: URI（含 base64）
+- 支持 apple-touch-icon、mask-icon 与 Web App Manifest 图标（按尺寸选大图）
+- 自动丢弃旧版误缓存的非图片数据；前端图标 URL 升级到 `v=3` 强制刷新
+- 图标候选地址只允许 http(s) / data:，拒绝 `file:` 等 scheme
+
 ## [1.0.0] - 2026-10-19
 
 首个开源版本。
