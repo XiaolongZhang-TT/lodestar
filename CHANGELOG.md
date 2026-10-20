@@ -22,6 +22,7 @@
 
 - 保存书签时只预热本次新增（或 URL 改为新 host）的图标，不再全量重复入队
 - 首页图标改为先显示首字母、加载成功后淡入替换；加载失败保留首字母，不再出现约 6 秒空白块
+- 仓库迁移到 `XiaolongZhang-dev/lodestar`，同步更新文档链接、徽章与 GHCR 镜像地址
 
 ## [1.0.0] - 2026-10-19
 
@@ -52,5 +53,5 @@
 - 图标代理仅允许书签中出现过的 host，避免被滥用为公开代理
 - 仓库仅包含演示书签数据，真实数据通过 `.gitignore` 排除
 
-[Unreleased]: https://github.com/XiaolongZhang-TT/lodestar/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/XiaolongZhang-TT/lodestar/releases/tag/v1.0.0
+[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.0

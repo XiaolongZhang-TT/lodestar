@@ -2,8 +2,8 @@
 
 [简体中文](README.md) | **English**
 
-[![CI](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/XiaolongZhang-TT/lodestar?sort=semver)](https://github.com/XiaolongZhang-TT/lodestar/releases)
+[![CI](https://github.com/XiaolongZhang-dev/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-dev/lodestar/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/XiaolongZhang-dev/lodestar?sort=semver)](https://github.com/XiaolongZhang-dev/lodestar/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/acc110789/lodestar)](https://hub.docker.com/r/acc110789/lodestar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -39,7 +39,7 @@
 ### Option 1: Docker Compose (recommended)
 
 ```bash
-git clone https://github.com/XiaolongZhang-TT/lodestar.git
+git clone https://github.com/XiaolongZhang-dev/lodestar.git
 cd lodestar
 cp .env.example .env
 # edit .env and change NAV_PASS to a strong password
@@ -64,9 +64,9 @@ docker run -d --name lodestar \
 ```
 
 > - Docker Hub: `acc110789/lodestar` ([image page](https://hub.docker.com/r/acc110789/lodestar))
-> - GHCR: `ghcr.io/xiaolongzhang-tt/lodestar`
+> - GHCR: `ghcr.io/xiaolongzhang-dev/lodestar`
 >
-> See [Releases](https://github.com/XiaolongZhang-TT/lodestar/releases) for available tags.
+> See [Releases](https://github.com/XiaolongZhang-dev/lodestar/releases) for available tags.
 > If the pull is denied, build from source with Option 1 instead.
 
 ### Option 3: Run locally
@@ -74,7 +74,7 @@ docker run -d --name lodestar \
 Requires Python 3.11+.
 
 ```bash
-git clone https://github.com/XiaolongZhang-TT/lodestar.git
+git clone https://github.com/XiaolongZhang-dev/lodestar.git
 cd lodestar
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt

@@ -2,8 +2,8 @@
 
 **简体中文** | [English](README.en.md)
 
-[![CI](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-TT/lodestar/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/XiaolongZhang-TT/lodestar?sort=semver)](https://github.com/XiaolongZhang-TT/lodestar/releases)
+[![CI](https://github.com/XiaolongZhang-dev/lodestar/actions/workflows/ci.yml/badge.svg)](https://github.com/XiaolongZhang-dev/lodestar/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/XiaolongZhang-dev/lodestar?sort=semver)](https://github.com/XiaolongZhang-dev/lodestar/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/acc110789/lodestar)](https://hub.docker.com/r/acc110789/lodestar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
@@ -36,7 +36,7 @@
 ### 方式一：Docker Compose（推荐）
 
 ```bash
-git clone https://github.com/XiaolongZhang-TT/lodestar.git
+git clone https://github.com/XiaolongZhang-dev/lodestar.git
 cd lodestar
 cp .env.example .env
 # 编辑 .env，至少把 NAV_PASS 改成强密码
@@ -61,9 +61,9 @@ docker run -d --name lodestar \
 ```
 
 > - Docker Hub：`acc110789/lodestar`（[镜像页面](https://hub.docker.com/r/acc110789/lodestar)）
-> - GHCR：`ghcr.io/xiaolongzhang-tt/lodestar`
+> - GHCR：`ghcr.io/xiaolongzhang-dev/lodestar`
 >
-> 可用 tag 见 [Releases](https://github.com/XiaolongZhang-TT/lodestar/releases)。
+> 可用 tag 见 [Releases](https://github.com/XiaolongZhang-dev/lodestar/releases)。
 > 如果无法拉取，请按方式一在目标机器上构建。
 
 ### 方式三：本机运行
@@ -71,7 +71,7 @@ docker run -d --name lodestar \
 需要 Python 3.11+。
 
 ```bash
-git clone https://github.com/XiaolongZhang-TT/lodestar.git
+git clone https://github.com/XiaolongZhang-dev/lodestar.git
 cd lodestar
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt

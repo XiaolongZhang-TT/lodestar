@@ -9,7 +9,7 @@ body:
         感谢反馈！提交前请确认：
         - 使用的是最新版本（或最新 `main`）
         - 已经搜索过已有 issue
-        - **安全漏洞请勿在此公开**，请按 [SECURITY.md](https://github.com/XiaolongZhang-TT/lodestar/blob/main/SECURITY.md) 私密报告
+        - **安全漏洞请勿在此公开**，请按 [SECURITY.md](https://github.com/XiaolongZhang-dev/lodestar/blob/main/SECURITY.md) 私密报告
 
   - type: textarea
     id: description

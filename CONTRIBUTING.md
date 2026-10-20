@@ -8,7 +8,7 @@
 
 ## 报告问题
 
-- **Bug / 功能建议**：使用 [Issue 模板](https://github.com/XiaolongZhang-TT/lodestar/issues/new/choose)
+- **Bug / 功能建议**：使用 [Issue 模板](https://github.com/XiaolongZhang-dev/lodestar/issues/new/choose)
 - **安全漏洞**：**不要**开公开 issue，请按 [SECURITY.md](SECURITY.md) 私密报告
 - 提交前请先搜索已有 issue，并确认使用的是最新版本
 - 粘贴日志、截图前请遮挡真实域名、账号、书签等隐私信息
@@ -18,7 +18,7 @@
 需要 Python 3.11+（与 CI 一致的最低版本）。
 
 ```bash
-git clone https://github.com/XiaolongZhang-TT/lodestar.git
+git clone https://github.com/XiaolongZhang-dev/lodestar.git
 cd lodestar
 
 # 方式一：使用 venv
@@ -82,7 +82,7 @@ docs: 补充 GHCR 镜像部署说明
 ## 发布镜像（维护者）
 
 打 `v*` tag 后，`Publish Docker image` 工作流会自动构建 `linux/amd64` + `linux/arm64`
-镜像并推送到 GHCR：`ghcr.io/xiaolongzhang-tt/lodestar`。
+镜像并推送到 GHCR：`ghcr.io/xiaolongzhang-dev/lodestar`。
 
 如需同时发布到 Docker Hub（`docker.io/<用户名>/lodestar`），首次需要：
 

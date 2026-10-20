@@ -3,7 +3,7 @@ FROM python:3.14-alpine
 
 LABEL org.opencontainers.image.title="Lodestar" \
       org.opencontainers.image.description="A lightweight, self-hosted personal navigation page" \
-      org.opencontainers.image.source="https://github.com/XiaolongZhang-TT/lodestar" \
+      org.opencontainers.image.source="https://github.com/XiaolongZhang-dev/lodestar" \
       org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app

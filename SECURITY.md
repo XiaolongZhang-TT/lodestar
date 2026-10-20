@@ -16,7 +16,7 @@
 
 请使用 GitHub 的私密漏洞报告：
 
-👉 https://github.com/XiaolongZhang-TT/lodestar/security/advisories/new
+👉 https://github.com/XiaolongZhang-dev/lodestar/security/advisories/new
 
 报告中请尽量包含：
 

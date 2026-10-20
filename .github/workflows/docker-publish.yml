@@ -35,7 +35,7 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           # 镜像名必须全小写
-          images: ghcr.io/xiaolongzhang-tt/lodestar
+          images: ghcr.io/xiaolongzhang-dev/lodestar
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}

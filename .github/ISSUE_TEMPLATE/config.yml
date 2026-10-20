@@ -1,9 +1,9 @@
 blank_issues_enabled: false
 contact_links:
   - name: 🔒 报告安全漏洞 / Report a security vulnerability
-    url: https://github.com/XiaolongZhang-TT/lodestar/security/advisories/new
+    url: https://github.com/XiaolongZhang-dev/lodestar/security/advisories/new
     about: 请勿在公开 issue 中披露安全问题，使用 GitHub 私密漏洞报告。
 
   - name: 📖 部署与使用文档 / Documentation
-    url: https://github.com/XiaolongZhang-TT/lodestar#readme
+    url: https://github.com/XiaolongZhang-dev/lodestar#readme
     about: 部署、配置和常见问题请先阅读 README。
