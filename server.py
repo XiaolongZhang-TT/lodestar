@@ -170,16 +170,21 @@ SSL_CTX.check_hostname = False   # 内网/自签证书的服务也要能取图�
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
 
-def known_hosts():
-    """当前书签里出现过的 host:port 集合，图标代理只服务这些（防滥用）"""
+def hosts_of(data):
+    """从书签数据里提取出现过的 host:port 集合"""
     hosts = set()
-    for cat in load_data().get("categories", []):
+    for cat in (data or {}).get("categories", []):
         for link in cat.get("links", []):
             try:
                 hosts.add(urllib.parse.urlsplit(link["url"]).netloc)
             except Exception:
                 pass
     return hosts
+
+
+def known_hosts():
+    """当前书签里出现过的 host:port 集合，图标代理只服务这些（防滥用）"""
+    return hosts_of(load_data())
 
 
 def fetch_url(url, timeout=5, max_bytes=ICON_MAX_BYTES):
@@ -468,9 +473,9 @@ def _icon_worker():
             ICON_QUEUE.task_done()
 
 
-def warm_icons():
-    """把全部书签 host 入队预热（启动和每次保存后调用）"""
-    for host in sorted(known_hosts()):
+def warm_icons(hosts=None):
+    """把指定 host 入队预热；不传参数时预热全部（仅供启动时使用）"""
+    for host in sorted(known_hosts() if hosts is None else hosts):
         ICON_QUEUE.put(host)
 
 
@@ -583,8 +588,11 @@ def api_data_save():
     clean, err = sanitize(request.get_json(silent=True))
     if err:
         return jsonify(ok=False, msg=err), 400
+    old_hosts = hosts_of(load_data())
     save_data(clean)
-    warm_icons()   # 新书签的图标后台预热
+    new_hosts = hosts_of(clean) - old_hosts
+    if new_hosts:
+        warm_icons(new_hosts)   # 只预热本次新增（或改了域名）的 host
     return jsonify(ok=True)
 
 

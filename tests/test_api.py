@@ -40,6 +40,37 @@ def login(client, user="admin", password=None):
     )
 
 
+def drain_icon_queue():
+    """取出并清空图标预热队列（测试里后台 worker 不运行）"""
+    hosts = []
+    while not server.ICON_QUEUE.empty():
+        hosts.append(server.ICON_QUEUE.get_nowait())
+        server.ICON_QUEUE.task_done()
+    return hosts
+
+
+@pytest.fixture(autouse=True)
+def clean_icon_queue():
+    drain_icon_queue()
+    yield
+    drain_icon_queue()
+
+
+def bookmarks_payload(*urls):
+    return {
+        "title": "测试导航",
+        "name": "",
+        "categories": [{
+            "name": "常用",
+            "icon": "",
+            "links": [
+                {"name": f"站点{i}", "url": url, "desc": "", "icon": ""}
+                for i, url in enumerate(urls)
+            ],
+        }],
+    }
+
+
 # ---------- 页面 ----------
 def test_pages_render(client):
     index = client.get("/")
@@ -121,6 +152,28 @@ def test_save_and_read_back(client, fast_login):
 
     data = client.get("/api/data").get_json()
     assert data["categories"][0]["links"][0]["url"] == "https://example.com"
+
+
+def test_save_warms_only_new_hosts(client, fast_login):
+    login(client)
+
+    # 第一次保存：只有新增的 host 入队
+    assert client.post("/api/data", json=bookmarks_payload("https://a.example/")).status_code == 200
+    assert drain_icon_queue() == ["a.example"]
+
+    # 已有 host 不重复预热，只入队新增的 b.example
+    payload = bookmarks_payload("https://a.example/", "https://b.example/")
+    assert client.post("/api/data", json=payload).status_code == 200
+    assert drain_icon_queue() == ["b.example"]
+
+    # 原样保存：不产生任何预热
+    assert client.post("/api/data", json=payload).status_code == 200
+    assert drain_icon_queue() == []
+
+    # URL 改成新域名：只预热新 host
+    changed = bookmarks_payload("https://c.example/")
+    assert client.post("/api/data", json=changed).status_code == 200
+    assert drain_icon_queue() == ["c.example"]
 
 
 def test_save_rejects_invalid_url(client, fast_login):
