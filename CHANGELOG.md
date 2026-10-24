@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-24
+
+### Changed
+
+- 重构首页顶部为紧凑工具栏：时钟与日期 / 问候左对齐，筛选和主题切换移到右上角同一行
+- 去掉独立的筛选栏，桌面端内容区起点从 237px 提前到 110px；窄屏自动折成两行
+
 ## [1.1.1] - 2026-10-24
 
 ### Changed
@@ -71,7 +78,8 @@
 - 图标代理仅允许书签中出现过的 host，避免被滥用为公开代理
 - 仓库仅包含演示书签数据，真实数据通过 `.gitignore` 排除
 
-[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.2
 [1.1.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.1
 [1.1.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.0
 [1.0.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.1
