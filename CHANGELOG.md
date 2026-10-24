@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-10-24
+
+### Changed
+
+- 放宽顶部工具栏：增大顶部留白、时钟字号与元素间距，并为工具栏增加分隔线
+- 筛选框、主题切换按钮同步放大，桌面端内容区起点约 150px，窄屏约 178px
+
 ## [1.1.2] - 2026-10-24
 
 ### Changed
@@ -78,7 +85,8 @@
 - 图标代理仅允许书签中出现过的 host，避免被滥用为公开代理
 - 仓库仅包含演示书签数据，真实数据通过 `.gitignore` 排除
 
-[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.3
 [1.1.2]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.2
 [1.1.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.1
 [1.1.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.0

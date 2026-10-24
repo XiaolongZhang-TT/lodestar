@@ -61,7 +61,7 @@ docker compose -f docker-compose.image.yml up -d
 ```
 
 - 已有数据目录时，在 `.env` 中设置 `LODESTAR_DATA_DIR=/你的路径/data`
-- 想固定版本可设置 `LODESTAR_IMAGE=acc110789/lodestar:1.1.2`
+- 想固定版本可设置 `LODESTAR_IMAGE=acc110789/lodestar:1.1.3`
 - 也可以把这个文件复制为 `docker-compose.yml` 后直接 `docker compose up -d`
 
 也可以直接 `docker run`：

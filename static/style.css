@@ -66,7 +66,7 @@ body::before {
 .page {
   max-width: 1060px;
   margin: 0 auto;
-  padding: clamp(18px, 3.5vh, 40px) 28px 40px;
+  padding: clamp(30px, 5.5vh, 64px) 28px 40px;
 }
 
 ::selection { background: rgba(99, 102, 241, 0.25); }
@@ -78,19 +78,21 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 32px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
   animation: rise 0.6s ease both;
 }
 
 .hero {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 24px;
   min-width: 0;
 }
 
 .clock-time {
-  font-size: clamp(38px, 4.6vw, 54px);
+  font-size: clamp(44px, 5vw, 60px);
   font-weight: 200;
   line-height: 1;
   letter-spacing: 1px;
@@ -108,7 +110,7 @@ body::before {
 .hero-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -121,9 +123,9 @@ body::before {
 
 .greeting {
   margin: 0;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.3;
   letter-spacing: 0.5px;
   white-space: nowrap;
   overflow: hidden;
@@ -137,7 +139,7 @@ body::before {
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   flex-shrink: 0;
 }
 
@@ -148,8 +150,8 @@ body::before {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 8px 16px;
-  width: 220px;
+  padding: 10px 20px;
+  width: 250px;
   outline: none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -163,8 +165,8 @@ body::before {
 
 /* 主题切换按钮 */
 .theme-toggle {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -179,13 +181,13 @@ body::before {
   transition: transform 0.2s, color 0.2s, box-shadow 0.2s;
 }
 .theme-toggle:hover { color: var(--text); transform: rotate(15deg); box-shadow: var(--shadow); }
-.theme-toggle svg { width: 18px; height: 18px; }
+.theme-toggle svg { width: 20px; height: 20px; }
 .icon-moon { display: none; }
 [data-theme="dark"] .icon-sun { display: none; }
 [data-theme="dark"] .icon-moon { display: block; }
 
 /* ---------- 书签分类 ---------- */
-.categories { margin-top: 20px; }
+.categories { margin-top: 24px; }
 
 .category { animation: rise 0.6s ease both; }
 
@@ -528,8 +530,9 @@ body::before {
 
 /* 窄屏：时钟与日期问候占一行，筛选和主题切换放下一行 */
 @media (max-width: 760px) {
-  .topbar { flex-wrap: wrap; align-items: flex-end; gap: 14px; }
-  .hero { width: 100%; justify-content: space-between; gap: 12px; }
+  .page { padding-top: clamp(20px, 4vh, 40px); }
+  .topbar { flex-wrap: wrap; align-items: flex-end; gap: 18px; }
+  .hero { width: 100%; justify-content: space-between; gap: 14px; }
   .hero-meta { align-items: flex-end; text-align: right; }
   .top-actions { width: 100%; }
   .filter-input { flex: 1; width: auto; min-width: 0; }
