@@ -76,16 +76,17 @@ const LETTER_COLORS = [
 ];
 
 function cardHTML(link, index) {
-  const host = hostOf(link.url);
-  const sub = link.desc || host.replace(/^www\./, "");
+  const hostname = hostOf(link.url);
+  const sub = link.desc || hostname.replace(/^www\./, "");
+  const host = netlocOf(link.url);
 
   let icon;
   if (link.icon) {
     icon = `<span class="emoji">${esc(link.icon)}</span>`;
-  } else if (netlocOf(link.url)) {
+  } else if (host) {
     // 先显示首字母占位，图标加载成功后再覆盖；加载失败则保留首字母
     // v=3：图标服务端曾修复 MIME/viewBox，版本号变化可击穿旧缓存
-    icon = `${letterHTML(link.name)}<img class="favicon" src="/api/icon?v=3&host=${encodeURIComponent(netlocOf(link.url))}" alt="" loading="lazy">`;
+    icon = `${letterHTML(link.name)}<img class="favicon" src="/api/icon?v=3&host=${encodeURIComponent(host)}" alt="" loading="lazy">`;
   } else {
     icon = letterHTML(link.name);
   }
@@ -94,9 +95,23 @@ function cardHTML(link, index) {
     <a class="card" href="${esc(link.url)}" target="_blank" rel="noopener"
        style="animation-delay:${Math.min(index * 40, 360)}ms">
       <span class="icon-tile" data-name="${esc(link.name)}">${icon}</span>
+      ${host ? `<i class="status-dot" data-host="${esc(host)}" title="状态未知"></i>` : ""}
       <span class="card-name">${esc(link.name)}</span>
       <span class="card-sub">${esc(sub)}</span>
     </a>`;
+}
+
+function sectionHTML(icon, title, links, startIndex, sectionIndex, extraClass = "") {
+  return `
+    <section class="category ${extraClass}" style="animation-delay:${sectionIndex * 60}ms">
+      <header class="cat-head">
+        <span class="cat-icon">${esc(icon)}</span>
+        <h2>${esc(title)}</h2>
+        <span class="cat-count">${links.length}</span>
+        <i class="rule"></i>
+      </header>
+      <div class="links">${links.map((l, i) => cardHTML(l, startIndex + i)).join("")}</div>
+    </section>`;
 }
 
 function letterHTML(name) {
@@ -114,19 +129,54 @@ function renderCategories(cats) {
     return;
   }
 
-  root.innerHTML = cats.map((cat, i) => `
-    <section class="category" style="animation-delay:${i * 60}ms">
-      <header class="cat-head">
-        <span class="cat-icon">${esc(cat.icon || "📁")}</span>
-        <h2>${esc(cat.name)}</h2>
-        <span class="cat-count">${cat.links.length}</span>
-        <i class="rule"></i>
-      </header>
-      <div class="links">${cat.links.map(cardHTML).join("")}</div>
-    </section>`).join("");
+  const allLinks = [];
+  cats.forEach((cat) => cat.links.forEach((link) => allLinks.push(link)));
+  const pinned = allLinks.filter((l) => l.pinned);
+  const pinnedUrls = new Set(pinned.map((l) => l.url));
+  const byUrl = new Map(allLinks.map((l) => [l.url, l]));
 
+  // 最近访问：localStorage 里存 URL，过期/删除的链接自动忽略
+  let recent = [];
+  try {
+    const urls = JSON.parse(store.get("nav-recent", "[]") || "[]");
+    recent = urls
+      .map((url) => byUrl.get(url))
+      .filter((link) => link && !pinnedUrls.has(link.url))
+      .slice(0, 8);
+  } catch { /* 数据损坏时按没有最近访问处理 */ }
+
+  const visibleCats = cats
+    .map((cat) => ({ ...cat, links: cat.links.filter((l) => !l.pinned) }))
+    .filter((cat) => cat.links.length);
+
+  const sections = [];
+  let index = 0;
+  if (pinned.length) {
+    sections.push(sectionHTML("⭐", "置顶", pinned, index, sections.length, "pinned-section"));
+    index += pinned.length;
+  }
+  if (recent.length) {
+    sections.push(sectionHTML("🕘", "最近访问", recent, index, sections.length, "recent-section"));
+    index += recent.length;
+  }
+  visibleCats.forEach((cat) => {
+    sections.push(sectionHTML(cat.icon || "📁", cat.name, cat.links, index, sections.length));
+    index += cat.links.length;
+  });
+
+  if (!sections.length) {
+    root.innerHTML = `<div class="empty">还没有书签 —— 打开 <a href="/admin">后台管理</a> 添加第一个分类吧</div>`;
+    return;
+  }
+
+  root.innerHTML = sections.join("");
+  bindFaviconLoad();
+  applyStatus();
+}
+
+function bindFaviconLoad() {
   // 图标位默认显示首字母；图片加载成功后覆盖首字母，失败则重试两次后保留首字母
-  root.querySelectorAll(".favicon").forEach((img) => {
+  $("#categories").querySelectorAll(".favicon").forEach((img) => {
     const show = () => {
       img.classList.add("is-ready");
       const letter = img.parentElement?.querySelector(".letter");
@@ -148,7 +198,55 @@ function renderCategories(cats) {
   });
 }
 
-/* ---------- 4. 本地书签筛选：输入即时过滤卡片（不是搜索引擎） ---------- */
+/* ---------- 4. 服务在线状态 ---------- */
+let STATUS = {};
+
+async function loadStatus() {
+  try {
+    const res = await fetch("/api/status");
+    if (!res.ok) return;
+    STATUS = await res.json();
+    applyStatus(STATUS);
+  } catch { /* 后端不可达时维持旧状态 */ }
+}
+
+function applyStatus(status = STATUS) {
+  document.querySelectorAll(".status-dot").forEach((dot) => {
+    const info = status[dot.dataset.host];
+    dot.className = "status-dot";
+    if (!info) {
+      dot.title = "状态未知";
+      return;
+    }
+    if (info.ok) {
+      const warn = typeof info.code === "number" && info.code >= 500;
+      dot.classList.add(warn ? "warn" : "online");
+      const ms = Number.isFinite(info.ms) ? ` · ${info.ms}ms` : "";
+      dot.title = `${warn ? "响应异常" : "在线"}${ms}${info.code ? ` · HTTP ${info.code}` : ""}`;
+    } else {
+      dot.classList.add("offline");
+      dot.title = "离线";
+    }
+  });
+}
+
+/* ---------- 5. 最近访问：点击卡片时记录，下次打开页面时展示 ---------- */
+document.addEventListener("click", (e) => {
+  const card = e.target.closest?.(".card");
+  if (!card) return;
+  const url = card.getAttribute("href");
+  if (!url) return;
+  try {
+    const list = JSON.parse(store.get("nav-recent", "[]") || "[]");
+    const next = [url, ...list.filter((item) => item !== url)].slice(0, 12);
+    store.set("nav-recent", JSON.stringify(next));
+  } catch { /* 隐私模式下 localStorage 不可用时忽略 */ }
+});
+
+loadStatus();
+setInterval(loadStatus, 60000);
+
+/* ---------- 6. 本地书签筛选：输入即时过滤卡片（不是搜索引擎） ---------- */
 const filterInput = $("#filterInput");
 
 filterInput.addEventListener("input", () => {
@@ -178,7 +276,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-/* ---------- 5. 启动：拉取后端数据（失败自动重试，避免白屏） ---------- */
+/* ---------- 7. 启动：拉取后端数据（失败自动重试，避免白屏） ---------- */
 async function boot() {
   const ctrl = new AbortController();           // 手动超时：兼容所有浏览器
   const timer = setTimeout(() => ctrl.abort(), 5000);

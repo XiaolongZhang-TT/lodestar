@@ -6,6 +6,7 @@
 #         python3 server.py
 #  配置:  环境变量 NAV_USER / NAV_PASS  后台账号密码
 #                        NAV_PORT       监听端口（默认 8091）
+#                        NAV_STATUS_INTERVAL  服务状态探测间隔（秒，0 关闭）
 #  数据:  data/bookmarks.json   书签数据（保存时自动备份）
 #         data/backups/         历史备份（保留最近 10 份）
 #         data/secret.key       会话签名密钥（自动生成，勿外泄）
@@ -24,8 +25,10 @@ import secrets
 import ssl
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 
 from flask import Flask, jsonify, request, send_file
@@ -169,6 +172,19 @@ SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False   # 内网/自签证书的服务也要能取图标
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
+# ---------- 服务在线状态 ----------
+try:
+    STATUS_INTERVAL = int(os.environ.get("NAV_STATUS_INTERVAL", "300"))
+except ValueError:
+    STATUS_INTERVAL = 300
+if STATUS_INTERVAL != 0:
+    STATUS_INTERVAL = max(60, STATUS_INTERVAL)   # 最小 60 秒；设为 0 可关闭
+STATUS_ENABLED = STATUS_INTERVAL > 0
+STATUS_TIMEOUT = 3
+STATUS_CACHE = {}
+STATUS_LOCK = threading.Lock()
+STATUS_REFRESH = threading.Event()
+
 
 def hosts_of(data):
     """从书签数据里提取出现过的 host:port 集合"""
@@ -185,6 +201,49 @@ def hosts_of(data):
 def known_hosts():
     """当前书签里出现过的 host:port 集合，图标代理只服务这些（防滥用）"""
     return hosts_of(load_data())
+
+
+def probe_host(host):
+    """探测一个 host 是否在线：有 HTTP 响应即算在线（401/403/404/5xx 也说明服务活着）"""
+    start = time.time()
+    code = None
+    ok = False
+    try:
+        req = urllib.request.Request(
+            f"https://{host}/",
+            headers={"User-Agent": "Mozilla/5.0 lodestar-status-checker"},
+        )
+        with urllib.request.urlopen(req, timeout=STATUS_TIMEOUT, context=SSL_CTX) as r:
+            r.read(1)                 # 读到首字节即可，避免下载整页
+            code = r.status
+            ok = True
+    except urllib.error.HTTPError as e:
+        code = e.code
+        ok = True                     # 服务返回了 HTTP 错误，但进程是活着的
+    except Exception:
+        ok = False
+    return {
+        "ok": ok,
+        "ms": int((time.time() - start) * 1000),
+        "code": code,
+        "at": int(time.time()),
+    }
+
+
+def _status_worker():
+    """后台定时探测全部书签 host，结果写入 STATUS_CACHE"""
+    while True:
+        hosts = sorted(known_hosts())
+        results = {}
+        if hosts:
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                for host, result in zip(hosts, pool.map(probe_host, hosts)):
+                    results[host] = result
+        with STATUS_LOCK:
+            STATUS_CACHE.clear()
+            STATUS_CACHE.update(results)
+        STATUS_REFRESH.wait(STATUS_INTERVAL)
+        STATUS_REFRESH.clear()
 
 
 def fetch(url, timeout=5, max_bytes=ICON_MAX_BYTES):
@@ -516,6 +575,7 @@ def sanitize(data):
                 "url": url,
                 "desc": str(link.get("desc", "")).strip(),
                 "icon": str(link.get("icon", "")).strip(),
+                "pinned": link.get("pinned") is True,
             })
         categories.append({
             "name": str(cat["name"]).strip(),
@@ -602,7 +662,15 @@ def api_data_save():
     new_hosts = hosts_of(clean) - old_hosts
     if new_hosts:
         warm_icons(new_hosts)   # 只预热本次新增（或改了域名）的 host
+    STATUS_REFRESH.set()        # 立即刷新在线状态，不用等下一轮
     return jsonify(ok=True)
+
+
+# ---------- 服务状态 API ----------
+@app.get("/api/status")
+def api_status():
+    with STATUS_LOCK:
+        return jsonify(dict(STATUS_CACHE))
 
 
 # ---------- 图标代理 API ----------
@@ -642,6 +710,8 @@ def main():
 
     threading.Thread(target=_icon_worker, daemon=True).start()
     warm_icons()  # 启动即预热全部图标
+    if STATUS_ENABLED:
+        threading.Thread(target=_status_worker, daemon=True).start()
 
     try:
         from waitress import serve

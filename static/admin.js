@@ -119,11 +119,12 @@ function renderEditor() {
   renderCatList();
 }
 
-/* 分类列表：结构变化（增删）时整体重绘，输入变化只改内存不重绘 */
+/* 分类列表：结构变化（增删/排序）时整体重绘，输入变化只改内存不重绘 */
 function renderCatList() {
   $("#catList").innerHTML = data.categories.map((cat, ci) => `
     <section class="admin-cat">
       <header class="admin-cat-head">
+        <span class="drag-handle cat-drag" title="拖动排序">⠿</span>
         <input class="cat-icon-input" value="${esc(cat.icon)}" title="分类图标（emoji）"
                data-ci="${ci}" data-k="icon">
         <input class="cat-name-input" value="${esc(cat.name)}"
@@ -133,6 +134,16 @@ function renderCatList() {
       <div class="admin-links">${cat.links.map((l, li) => linkRow(l, ci, li)).join("")}</div>
       <button class="btn btn-ghost admin-add-link" data-addlink="${ci}">＋ 添加链接</button>
     </section>`).join("");
+
+  // 建立 DOM → 内存对象的引用，拖拽排序后据此重建 categories / links 顺序
+  $("#catList").querySelectorAll(".admin-cat").forEach((sec, ci) => {
+    const cat = data.categories[ci];
+    if (!cat) return;
+    sec._cat = cat;
+    sec.querySelectorAll(".admin-link").forEach((row, li) => {
+      row._link = cat.links[li];
+    });
+  });
 
   onAll("[data-delcat]", (btn) => btn.onclick = () => {
     const ci = +btn.dataset.delcat;
@@ -144,7 +155,7 @@ function renderCatList() {
   });
   onAll("[data-addlink]", (btn) => btn.onclick = () => {
     data.categories[+btn.dataset.addlink].links
-      .push({ name: "", url: "https://", desc: "", icon: "" });
+      .push({ name: "", url: "https://", desc: "", icon: "", pinned: false });
     markDirty();
     renderCatList();
   });
@@ -154,12 +165,69 @@ function renderCatList() {
     markDirty();
     renderCatList();
   });
+  onAll("[data-pin]", (btn) => btn.onclick = () => {
+    const link = data.categories[+btn.dataset.ci].links[+btn.dataset.li];
+    link.pinned = !link.pinned;
+    markDirty();
+    syncPinButton(btn, link);
+  });
   onAll("input[data-k]", (inp) => inp.oninput = (e) => {
     const { ci, li, k } = e.target.dataset;
     if (li === undefined) data.categories[+ci][k] = e.target.value;        // 分类字段
     else data.categories[+ci].links[+li][k] = e.target.value;              // 链接字段
     markDirty();
   });
+
+  initSortables();
+}
+
+function syncPinButton(btn, link) {
+  btn.classList.toggle("on", !!link.pinned);
+  btn.textContent = link.pinned ? "★" : "☆";
+  btn.title = link.pinned ? "取消置顶" : "置顶";
+}
+
+/* 拖拽排序：分类可排序，链接可在分类之间拖动 */
+let sortables = [];
+
+function initSortables() {
+  if (typeof Sortable === "undefined") return;   // 静态资源缺失时退化为普通列表
+  sortables.forEach((s) => s.destroy());
+  sortables = [];
+
+  const list = $("#catList");
+  sortables.push(new Sortable(list, {
+    animation: 150,
+    handle: ".cat-drag",
+    draggable: ".admin-cat",
+    onEnd: () => queueOrderSync(),
+  }));
+  list.querySelectorAll(".admin-links").forEach((links) => {
+    sortables.push(new Sortable(links, {
+      group: "lodestar-links",
+      animation: 150,
+      handle: ".link-drag",
+      draggable: ".admin-link",
+      onEnd: () => queueOrderSync(),
+    }));
+  });
+}
+
+function queueOrderSync() {
+  // 等 Sortable 完成本次拖拽再重绘，避免在 onEnd 里销毁自身
+  setTimeout(() => {
+    const cats = [];
+    $("#catList").querySelectorAll(".admin-cat").forEach((sec) => {
+      if (!sec._cat) return;
+      sec._cat.links = [...sec.querySelectorAll(".admin-link")]
+        .map((row) => row._link)
+        .filter(Boolean);
+      cats.push(sec._cat);
+    });
+    data.categories = cats;
+    markDirty();
+    renderCatList();
+  }, 0);
 }
 
 function linkRow(l, ci, li) {
@@ -168,6 +236,9 @@ function linkRow(l, ci, li) {
             data-ci="${ci}" data-li="${li}" data-k="${k}">`;
   return `
     <div class="admin-link">
+      <span class="drag-handle link-drag" title="拖动排序">⠿</span>
+      <button class="pin-btn ${l.pinned ? "on" : ""}" data-pin data-ci="${ci}" data-li="${li}"
+              title="${l.pinned ? "取消置顶" : "置顶"}">${l.pinned ? "★" : "☆"}</button>
       ${cell("icon", "cell-icon", "emoji")}
       ${cell("name", "cell-name", "名称")}
       ${cell("url", "cell-url", "https://…")}
@@ -195,6 +266,7 @@ function normalizeData() {
       l.desc = (l.desc || "").trim();
       l.icon = (l.icon || "").trim();
       l.url = (l.url || "").trim();
+      l.pinned = !!l.pinned;
       if (l.name && l.url && !/^https?:\/\//i.test(l.url)) {
         l.url = "https://" + l.url;   // 内网地址习惯不带协议，自动补全
       }

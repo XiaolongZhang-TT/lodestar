@@ -16,5 +16,6 @@ services:
       NAV_PORT: ${NAV_PORT:-8091}
       NAV_USER: ${NAV_USER:-admin}
       NAV_PASS: ${NAV_PASS:-lodestar-admin}
+      NAV_STATUS_INTERVAL: ${NAV_STATUS_INTERVAL:-300}
     volumes:
       - ./data:/app/data

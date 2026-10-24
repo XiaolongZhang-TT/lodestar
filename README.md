@@ -24,6 +24,9 @@
 
 - 🕐 大时钟 + 按时段问候语
 - 🧩 卡片式书签，自动解析网站图标（favicon / 页面声明的图标），失败回退彩色首字母方块，也可用 emoji 覆盖
+- 📌 置顶与最近访问：重要链接固定到顶部，最近打开自动记录
+- 🟢 服务在线状态：定时探测书签服务，卡片右上角显示在线 / 离线
+- ↕️ 后台拖拽排序：分类和链接可拖动调整，链接支持跨分类移动
 - 🔍 本地书签筛选（按 `/` 聚焦，即时过滤，不是搜索引擎）
 - 🔐 **后台管理**（`/admin`）：登录后可增删改分类和链接、设置页面标题，保存即生效；未保存有提醒，网址缺协议自动补全
 - 🌙 明 / 暗双主题：默认跟随系统，手动切换后会记住
@@ -107,6 +110,7 @@ NAV_USER=你的用户名 NAV_PASS=你的强密码 python3 server.py
 | `NAV_USER` | `admin` | 后台登录用户名 |
 | `NAV_PASS` | `lodestar-admin` | 后台登录密码，正式部署必须修改 |
 | `NAV_PORT` | `8091` | 服务监听端口 |
+| `NAV_STATUS_INTERVAL` | `300` | 服务状态探测间隔（秒），最小 60；设为 `0` 关闭 |
 
 使用 docker compose 时，把变量写进同目录的 `.env`（参考 [`.env.example`](.env.example)），避免留在 shell 历史里。
 
@@ -165,6 +169,7 @@ lodestar/
 │   ├── index.html + app.js     # 前台：时钟 / 渲染 / 筛选 / 图标重试
 │   ├── admin.html + admin.js   # 后台：登录 / 增删改 / 未保存保护
 │   ├── style.css               # 前后台共用样式（含明暗主题变量）
+│   ├── vendor/sortable.min.js  # 后台拖拽排序（SortableJS, MIT）
 │   └── manifest.webmanifest + icon.svg
 ├── tests/               # pytest：纯函数 + API 测试
 ├── docs/                # README 截图
@@ -180,6 +185,10 @@ lodestar/
 
 欢迎提交 Issue 和 PR！请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
 安全漏洞请按 [SECURITY.md](SECURITY.md) 私密报告，不要开公开 issue。
+
+## 第三方资源
+
+- [SortableJS](https://github.com/SortableJS/Sortable) 1.15.6（MIT）——后台拖拽排序，已内置于 `static/vendor/`
 
 ## 许可证
 

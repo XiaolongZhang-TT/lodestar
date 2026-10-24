@@ -141,6 +141,7 @@ def test_save_and_read_back(client, fast_login):
                 "url": "https://example.com",
                 "desc": "",
                 "icon": "",
+                "pinned": True,
             }],
         }],
     }
@@ -149,9 +150,11 @@ def test_save_and_read_back(client, fast_login):
     with open(server.DATA_FILE, encoding="utf-8") as f:
         saved = json.load(f)
     assert saved["title"] == "我的导航"
+    assert saved["categories"][0]["links"][0]["pinned"] is True
 
     data = client.get("/api/data").get_json()
     assert data["categories"][0]["links"][0]["url"] == "https://example.com"
+    assert data["categories"][0]["links"][0]["pinned"] is True
 
 
 def test_save_warms_only_new_hosts(client, fast_login):
@@ -197,3 +200,10 @@ def test_save_rejects_malformed_json(client, fast_login):
 def test_icon_rejects_unknown_host(client):
     assert client.get("/api/icon?host=evil.example").status_code == 403
     assert client.get("/api/icon").status_code == 403
+
+
+# ---------- 在线状态 ----------
+def test_status_endpoint(client, monkeypatch):
+    payload = {"example.com": {"ok": True, "ms": 12, "code": 200, "at": 1}}
+    monkeypatch.setattr(server, "STATUS_CACHE", payload)
+    assert client.get("/api/status").get_json() == payload

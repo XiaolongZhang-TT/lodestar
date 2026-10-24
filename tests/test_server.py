@@ -18,7 +18,7 @@ def test_sanitize_ok():
     data = {
         "title": "测试", "name": "张三",
         "categories": [{"name": "常用", "icon": "📁", "links": [
-            {"name": "示例", "url": "https://example.com", "desc": " 备注 ", "icon": "🌐"},
+            {"name": "示例", "url": "https://example.com", "desc": " 备注 ", "icon": "🌐", "pinned": True},
         ]}],
     }
     clean, err = server.sanitize(data)
@@ -27,6 +27,15 @@ def test_sanitize_ok():
     link = clean["categories"][0]["links"][0]
     assert link["desc"] == "备注"          # 去除首尾空白
     assert link["url"] == "https://example.com"
+    assert link["pinned"] is True
+
+
+def test_sanitize_pinned_defaults_false():
+    clean, err = server.sanitize({"categories": [
+        {"name": "常用", "links": [{"name": "a", "url": "https://a"}]},
+    ]})
+    assert err is None
+    assert clean["categories"][0]["links"][0]["pinned"] is False
 
 
 def test_sanitize_bad_url_position():

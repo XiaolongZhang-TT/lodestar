@@ -21,5 +21,6 @@ services:
       NAV_PORT: ${NAV_PORT:-8091}
       NAV_USER: ${NAV_USER:-admin}
       NAV_PASS: ${NAV_PASS:?请在 .env 中设置 NAV_PASS}
+      NAV_STATUS_INTERVAL: ${NAV_STATUS_INTERVAL:-300}
     volumes:
       - ${LODESTAR_DATA_DIR:-./data}:/app/data

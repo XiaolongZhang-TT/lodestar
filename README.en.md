@@ -26,6 +26,9 @@
 - 🕐 Large clock with time-of-day greeting
 - 🧩 Card-based bookmarks with automatic favicon discovery (favicon / declared icons), colored
   initials fallback, and optional emoji override
+- 📌 Pinned links and recent visits: keep important links on top, remember recently opened items
+- 🟢 Service status: periodic reachability checks with an online / offline dot on each card
+- ↕️ Admin drag & drop: reorder categories and links, move links between categories
 - 🔍 Instant client-side bookmark filter (`/` to focus)
 - 🔐 **Admin panel** (`/admin`): create / edit / delete categories and links, change page title,
   auto-fill missing URL schemes, unsaved-changes warning
@@ -110,6 +113,7 @@ NAV_USER=your-user NAV_PASS=your-strong-password python3 server.py
 | `NAV_USER` | `admin` | Admin username |
 | `NAV_PASS` | `lodestar-admin` | Admin password — change it in production |
 | `NAV_PORT` | `8091` | Listen port |
+| `NAV_STATUS_INTERVAL` | `300` | Service status check interval in seconds (min 60; `0` disables) |
 
 With docker compose, put these in a `.env` file next to `docker-compose.yml`
 (see [`.env.example`](.env.example)).
@@ -170,6 +174,7 @@ lodestar/
 │   ├── index.html + app.js     # Home: clock / rendering / filter / icon retry
 │   ├── admin.html + admin.js   # Admin: login / editing / unsaved guard
 │   ├── style.css               # Shared styles (light + dark variables)
+│   ├── vendor/sortable.min.js  # Admin drag & drop (SortableJS, MIT)
 │   └── manifest.webmanifest + icon.svg
 ├── tests/               # pytest: pure functions + API tests
 ├── docs/                # README screenshots
@@ -186,6 +191,10 @@ lodestar/
 Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first. For security issues, use the private
 reporting process in [SECURITY.md](SECURITY.md) instead of a public issue.
+
+## Third-party assets
+
+- [SortableJS](https://github.com/SortableJS/Sortable) 1.15.6 (MIT) — admin drag & drop, vendored under `static/vendor/`
 
 ## License
 
