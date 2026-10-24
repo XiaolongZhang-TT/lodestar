@@ -8,11 +8,11 @@
 #   LODESTAR_DATA_DIR=/volume1/docker/lodestar/data
 #
 # 固定镜像版本（推荐），在 .env 里加：
-#   LODESTAR_IMAGE=acc110789/lodestar:1.1.3
+#   LODESTAR_IMAGE=acc110789/lodestar:1.1.4
 
 services:
   lodestar:
-    image: ${LODESTAR_IMAGE:-acc110789/lodestar:1.1.3}
+    image: ${LODESTAR_IMAGE:-acc110789/lodestar:1.1.4}
     container_name: ${LODESTAR_CONTAINER:-lodestar}
     restart: unless-stopped
     ports:

@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-10-24
+
+### Changed
+
+- 移除工具栏底部分割线
+- 进一步增加顶部留白、时钟字号与工具栏间距；桌面端内容区起点约 178px，移动端约 182px
+
 ## [1.1.3] - 2026-10-24
 
 ### Changed
@@ -85,7 +92,8 @@
 - 图标代理仅允许书签中出现过的 host，避免被滥用为公开代理
 - 仓库仅包含演示书签数据，真实数据通过 `.gitignore` 排除
 
-[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.4...HEAD
+[1.1.4]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.4
 [1.1.3]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.3
 [1.1.2]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.2
 [1.1.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.1
