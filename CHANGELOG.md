@@ -5,6 +5,12 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-24
+
+### Changed
+
+- 压缩首页时间 / 日期 / 问候语区域的高度，首屏可显示更多书签
+
 ## [1.1.0] - 2026-10-24
 
 ### Added
@@ -65,7 +71,8 @@
 - 图标代理仅允许书签中出现过的 host，避免被滥用为公开代理
 - 仓库仅包含演示书签数据，真实数据通过 `.gitignore` 排除
 
-[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.1
 [1.1.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.0
 [1.0.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.1
 [1.0.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.0
