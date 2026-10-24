@@ -5,6 +5,8 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-24
+
 ### Added
 
 - 新增 `docker-compose.image.yml`，可直接使用预构建镜像运行，无需在目标机器上构建
@@ -63,6 +65,7 @@
 - 图标代理仅允许书签中出现过的 host，避免被滥用为公开代理
 - 仓库仅包含演示书签数据，真实数据通过 `.gitignore` 排除
 
-[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/XiaolongZhang-dev/lodestar/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.1.0
 [1.0.1]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.1
 [1.0.0]: https://github.com/XiaolongZhang-dev/lodestar/releases/tag/v1.0.0

@@ -64,7 +64,7 @@ docker compose -f docker-compose.image.yml up -d
 ```
 
 - If you already have a data directory, set `LODESTAR_DATA_DIR=/path/to/data` in `.env`
-- Pin a version with `LODESTAR_IMAGE=acc110789/lodestar:1.0.1`
+- Pin a version with `LODESTAR_IMAGE=acc110789/lodestar:1.1.0`
 - You can also copy the file to `docker-compose.yml` and run `docker compose up -d`
 
 Or run directly with `docker run`:
